@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/stryker-mutator.json",
+  "packageManager": "pnpm",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "testRunner": "vitest",
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "src/**/*.ts",
+    "!src/**/*.test.ts",
+    "!src/**/__tests__/**",
+    "!src/**/*.d.ts"
+  ],
+  "concurrency": 4,
+  "tempDirName": ".stryker-tmp",
+  "reporters": ["progress", "html", "json"],
+  "htmlReporter": { "baseDir": ".stryker-results" },
+  "thresholds": { "high": 85, "low": 60, "break": null }
+}

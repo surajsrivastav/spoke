@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #09090b;
+  --bg-surface: #0f0f12;
+  --bg-elevated: #13131a;
+  --bg-overlay: #1a1a24;
+
+  --border-subtle: #1e1e2e;
+  --border-default: #2e2e3e;
+  --border-strong: #3e3e52;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #4b5563;
+  --text-disabled: #2e2e3e;
+
+  --accent-primary: #6366f1;
+  --accent-glow: rgba(99, 102, 241, 0.15);
+
+  --status-running: #3b82f6;
+  --status-planning: #a855f7;
+  --status-verifying: #8b5cf6;
+  --status-provisioning: #14b8a6;
+  --status-completed: #22c55e;
+  --status-failed: #ef4444;
+  --status-killed: #6b7280;
+  --status-warning: #f59e0b;
+
+  --text-xs: 10px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-ui: 13px;
+  --text-sub: 14px;
+  --text-h3: 16px;
+  --text-h2: 20px;
+  --text-h1: 28px;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  --sidebar-width: 220px;
+  --detail-panel-width: 380px;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "Geist", "Inter", system-ui, sans-serif;
+  font-size: var(--text-base);
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes panelSlideIn {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes killSlideIn {
+  from { transform: translateY(-8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes toastSlideIn {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.font-mono-m {
+  font-family: "Geist Mono", "JetBrains Mono", "Fira Code", monospace;
+}
+
+@layer utilities {
+  .text-xs-c {
+    font-size: var(--text-xs);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .text-xs-c-w6 {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .text-sm-m {
+    font-family: "Geist Mono", "JetBrains Mono", "Fira Code", monospace;
+    font-size: var(--text-sm);
+  }
+  .tabular-nums-c {
+    font-variant-numeric: tabular-nums;
+  }
+}

@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Task {
+  id              String    @id
+  goal            String
+  repo_url        String
+  branch_target   String    @default("main")
+  status          String
+  cost_cap_usd    Decimal   @default(5.00)
+  created_by      String
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  completed_at    DateTime?
+  task_runs       TaskRun[]
+  pull_requests   PullRequest[]
+
+  @@map("tasks")
+  @@index([status])
+  @@index([created_at(sort: Desc)])
+}
+
+model TaskRun {
+  id              String    @id
+  task_id         String
+  task            Task      @relation(fields: [task_id], references: [id])
+  attempt         Int       @default(1)
+  sandbox_id      String?
+  workflow_id     String
+  status          String
+  total_cost_usd  Decimal   @default(0)
+  total_tokens    Int       @default(0)
+  started_at      DateTime  @default(now())
+  ended_at        DateTime?
+  provenances     Provenance[]
+  traces          Trace[]
+
+  @@map("task_runs")
+  @@index([task_id])
+  @@index([status])
+}
+
+model Provenance {
+  id              String    @id
+  task_run_id     String
+  task_run        TaskRun   @relation(fields: [task_run_id], references: [id])
+  type            String
+  payload         Json
+  cost_usd        Decimal   @default(0)
+  tokens          Int       @default(0)
+  duration_ms     Int?
+  created_at      DateTime  @default(now())
+
+  @@map("provenance")
+  @@index([task_run_id, created_at])
+}
+
+model PullRequest {
+  id              String    @id
+  task_id         String
+  task            Task      @relation(fields: [task_id], references: [id])
+  github_url      String
+  number          Int
+  state           String
+  created_at      DateTime  @default(now())
+
+  @@map("pull_requests")
+  @@index([task_id])
+  @@index([state])
+}
+
+model Trace {
+  id              String    @id
+  task_run_id     String
+  task_run        TaskRun   @relation(fields: [task_run_id], references: [id])
+  type            String
+  model           String?
+  input           Json
+  output          Json?
+  tokens_in       Int       @default(0)
+  tokens_out      Int       @default(0)
+  cost_usd        Decimal   @default(0)
+  duration_ms     Int?
+  created_at      DateTime  @default(now())
+
+  @@map("traces")
+  @@index([task_run_id, created_at])
+}

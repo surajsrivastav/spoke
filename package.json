@@ -1,0 +1,40 @@
+{
+  "name": "harness",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "test": "pnpm -r test",
+    "test:mutation": "pnpm -r test:mutation",
+    "ralph": "tsx scripts/ralph.ts",
+    "edge-cases": "tsx scripts/edge-case-finder.ts",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "migrate": "pnpm --filter @harness/db migrate",
+    "db:studio": "pnpm --filter @harness/db studio"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.1.9"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "@swc/core",
+      "protobufjs"
+    ]
+  }
+}

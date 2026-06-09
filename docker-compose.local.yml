@@ -1,0 +1,95 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: harness
+      POSTGRES_PASSWORD: harness_dev
+      POSTGRES_DB: harness_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - harness_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harness"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  temporal:
+    image: temporalio/auto-setup:1.25.0
+    ports:
+      - "7233:7233"
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: harness
+      POSTGRES_PWD: harness_dev
+      POSTGRES_SEEDS: postgres
+      TEMPORAL_ADDRESS: temporal:7233
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "namespace", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  temporal-web:
+    image: temporalio/web:1.15.0
+    ports:
+      - "8233:8088"
+    environment:
+      TEMPORAL_GRPC_ENDPOINT: temporal:7233
+    depends_on:
+      temporal:
+        condition: service_healthy
+
+  whatsapp-edge:
+    build:
+      context: .
+      dockerfile: apps/whatsapp-edge/Dockerfile
+    ports:
+      - "3002:3001"
+    env_file: .env.local
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  slack-edge:
+    build:
+      context: .
+      dockerfile: apps/slack-edge/Dockerfile
+    ports:
+      - "3001:3001"
+    env_file: .env.local
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: apps/orchestrator/Dockerfile
+    env_file: .env.local
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+
+  operator-ui:
+    build:
+      context: .
+      dockerfile: apps/operator-ui/Dockerfile
+    ports:
+      - "3000:3000"
+    env_file: .env.local
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  harness_pg_data:

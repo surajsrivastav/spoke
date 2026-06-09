@@ -1,0 +1,22 @@
+{
+  "version": "5.2",
+  "steps": [
+    {
+      "tag": "CreateMigration",
+      "prettyName": "20250530000000_init",
+      "datamodel": "*** populated at generation time ***",
+      "datamodelSteps": [
+        { "tag": "CreateModel", "model": "Task" },
+        { "tag": "CreateModel", "model": "TaskRun" },
+        { "tag": "CreateModel", "model": "Provenance" },
+        { "tag": "CreateModel", "model": "Trace" },
+        { "tag": "CreateModel", "model": "PullRequest" }
+      ],
+      "migrationId": "20250530000000_init",
+      "applied": 0,
+      "rolledBack": 0,
+      "steps": 5,
+      "errors": []
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+services:
+  slack-edge:
+    build:
+      dockerfile: Dockerfile.dev
+    image: harness-dev
+    ports:
+      - "3001:3001"
+    env_file: .env.local
+    volumes:
+      - ./apps/slack-edge/src:/app/apps/slack-edge/src
+      - ./packages:/app/packages
+    command: ["pnpm", "--filter", "slack-edge", "dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  whatsapp-edge:
+    build:
+      dockerfile: Dockerfile.dev
+    image: harness-dev
+    ports:
+      - "3002:3001"
+    env_file: .env.local
+    volumes:
+      - ./apps/whatsapp-edge/src:/app/apps/whatsapp-edge/src
+      - ./packages:/app/packages
+    command: ["pnpm", "--filter", "whatsapp-edge", "dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  orchestrator:
+    build:
+      dockerfile: Dockerfile.dev
+    image: harness-dev
+    env_file: .env.local
+    volumes:
+      - ./apps/orchestrator/src:/app/apps/orchestrator/src
+      - ./packages:/app/packages
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["pnpm", "--filter", "orchestrator", "dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+
+  operator-ui:
+    build:
+      dockerfile: Dockerfile.dev
+    image: harness-dev
+    ports:
+      - "3000:3000"
+    env_file: .env.local
+    volumes:
+      - ./apps/operator-ui/src:/app/apps/operator-ui/src
+      - ./apps/operator-ui/public:/app/apps/operator-ui/public
+      - ./packages:/app/packages
+    command: ["pnpm", "--filter", "operator-ui", "dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
