@@ -10,7 +10,7 @@ app.get('/health', (c) => c.json({ status: 'ok' }))
 app.use('/slack/*', verifySlackRequest)
 app.route('/slack', slackEvent)
 
-const port = Number(process.env.PORT ?? '3001')
+const port = Number(process.env.SLACK_EDGE_PORT ?? process.env.PORT ?? '3001')
 
 if (!process.env.VITEST) {
   serve({ fetch: app.fetch, port })

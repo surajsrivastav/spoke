@@ -15,7 +15,7 @@ app.get('/health', (c) => c.json({ status: 'ok' }))
 app.route('/webhook', webhook)
 app.route('/webhook', incomingMessage)
 
-const port = Number(process.env.PORT ?? '3001')
+const port = Number(process.env.WHATSAPP_EDGE_PORT ?? process.env.PORT ?? '3002')
 
 if (process.env.VITEST === undefined) {
   serve({ fetch: app.fetch, port })
