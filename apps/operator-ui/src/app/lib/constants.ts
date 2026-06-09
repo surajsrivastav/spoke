@@ -54,8 +54,8 @@ export const EVENT_TYPE_CONFIG: Record<
 
 export const NAV_ITEMS = [
   { id: "fleet", label: "Fleet", icon: "◇", href: "/" },
-  { id: "trace", label: "Trace", icon: "◎", href: "/" },
+  { id: "trace", label: "Trace", icon: "◎", href: "/trace" },
   { id: "costs", label: "Costs", icon: "⟐", href: "/cost" },
   { id: "sso", label: "SSO", icon: "◈", href: "/sso" },
-  { id: "settings", label: "Settings", icon: "✦", href: "/" },
+  { id: "settings", label: "Settings", icon: "✦", href: "/settings" },
 ];

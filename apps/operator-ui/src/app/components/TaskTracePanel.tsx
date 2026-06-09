@@ -58,15 +58,17 @@ export default function TaskTracePanel({ task, onClose, onKill }: TracePanelProp
   const sandboxCost = estimatedCost * 0.08;
   const verifCost = estimatedCost * 0.05;
 
-  const events: { type: keyof typeof EVENT_TYPE_CONFIG; detail: string; time: string; id: string }[] = provenance.length > 0
-    ? provenance.flatMap((p, i) => {
+  type TraceEv = { type: keyof typeof EVENT_TYPE_CONFIG; detail: string; time: string; id: string };
+
+  const events: TraceEv[] = provenance.length > 0
+    ? provenance.flatMap<TraceEv>((p, i) => {
         const t0 = new Date(p.created_at);
-        const tPrev = i > 0 ? new Date(provenance[i - 1].created_at) : t0;
-        const offset = Math.floor((t0.getTime() - new Date(provenance[0]?.created_at ?? t0).getTime()) / 1000);
+        const offset = Math.floor((t0.getTime() - new Date(provenance[0].created_at).getTime()) / 1000);
         const timeStr = `T+${String(Math.floor(offset / 60)).padStart(2, "0")}:${String(offset % 60).padStart(2, "0")}`;
 
         if (p.type === "tool_called" && p.payload?.action === "provision_sandbox") {
-          return [{ type: "SANDBOX_CREATED" as const, detail: `Sandbox ${p.payload.sandboxId?.slice(0, 8) || ""} provisioned`, time: timeStr, id: p.id }];
+          const sid = String(p.payload.sandboxId ?? "");
+          return [{ type: "SANDBOX_CREATED" as const, detail: `Sandbox ${sid.slice(0, 8)} provisioned`, time: timeStr, id: p.id }];
         }
         if (p.type === "tool_called" && p.payload?.action === "agent_run") {
           return [{
@@ -77,20 +79,19 @@ export default function TaskTracePanel({ task, onClose, onKill }: TracePanelProp
           }];
         }
         if (p.type === "verification_run") {
-          const passed = p.payload?.passed;
-          const errors = p.payload?.errors ? Object.keys(p.payload.errors as object).filter(k => (p.payload.errors as any)[k]).join(", ") : "none";
+          const errors = p.payload?.errors ? Object.keys(p.payload.errors as object).filter(k => (p.payload.errors as Record<string, boolean>)[k]).join(", ") : "none";
           return [{
             type: "VERIFICATION_RAN" as const,
-            detail: passed ? "All gates passed" : `Failed: ${errors || "unknown"}`,
+            detail: p.payload?.passed ? "All gates passed" : `Failed: ${errors || "unknown"}`,
             time: timeStr,
             id: p.id,
           }];
         }
         if (p.type === "commit_made") {
-          return [{ type: "GIT_COMMITTED" as const, detail: `Branch: ${p.payload?.branch || ""}`, time: timeStr, id: p.id }];
+          return [{ type: "GIT_COMMITTED" as const, detail: `Branch: ${p.payload?.branch ?? ""}`, time: timeStr, id: p.id }];
         }
         if (p.type === "pr_opened") {
-          return [{ type: "PR_CREATED" as const, detail: `${p.payload?.prUrl || ""}`, time: timeStr, id: p.id }];
+          return [{ type: "PR_CREATED" as const, detail: `${p.payload?.prUrl ?? ""}`, time: timeStr, id: p.id }];
         }
         return [];
       })
@@ -309,7 +310,7 @@ export default function TaskTracePanel({ task, onClose, onKill }: TracePanelProp
 
                 {isExpanded && ev.type === "TOOL_CALLED" && (() => {
                   const p = provenance.find(pp => pp.id === ev.id);
-                  const result = p?.payload?.result || "";
+                  const result = String(p?.payload?.result ?? "");
                   return (
                     <div
                       style={{
