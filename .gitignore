@@ -10,8 +10,9 @@ build
 .turbo
 .vscode/
 .idea/
-
-# Stryker mutation testing artifacts
+.terraform/
+*.tsbuildinfo
+coverage/
+reports/
 .stryker-tmp/
 .stryker-results/
-reports/mutation/
