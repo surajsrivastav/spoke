@@ -15,7 +15,7 @@
   - Status: **Complete** — Schema ready, migration SQL generated
 
 ## Week 2: Slack Edge + Task Creation
-**Goal**: Slack `@harness` creates a task row.
+**Goal**: Slack `@spoke` creates a task row.
 
 - [x] S-2.1: Slack app setup
   - Created: `slack-manifest.yml` with bot scopes and event subscription for `app_mention`
@@ -25,7 +25,7 @@
   - Status: **Complete** — Invalid requests return 401
 - [x] S-2.3: Mention handler + task creation
   - Created: `apps/slack-edge/src/index.ts` — Hono server with `app_mention` handler that creates Task in DB via Prisma, replies via Slack Web API
-  - Status: **Complete** — `@harness` triggers task creation
+  - Status: **Complete** — `@spoke` triggers task creation
 
 ## Week 3: Temporal Workflow + Worker
 **Goal**: Task goes from "pending" to "running" — worker picks it up.
@@ -86,7 +86,7 @@
 **Goal**: Real PRs created. Operator can kill tasks.
 
 - [x] S-7.1: Push branch
-  - Created: `packages/agent/src/github.ts` — `pushBranch(sandboxId, repoUrl, goal)` configures git, creates branch `harness/<taskId>-<slug>`, commits, pushes using GH_TOKEN
+  - Created: `packages/agent/src/github.ts` — `pushBranch(sandboxId, repoUrl, goal)` configures git, creates branch `spoke/<taskId>-<slug>`, commits, pushes using GH_TOKEN
   - Status: **Complete**
 - [x] S-7.2: Create PR
   - Created: `packages/agent/src/github.ts` — `createPr(repoUrl, branch, goal, description?)` creates PR via GitHub API
@@ -100,7 +100,7 @@
   - Status: **Complete**
 
 ## Week 8: Polish + Dogfooding
-**Goal**: **5 PRs on Harness authored by Harness.**
+**Goal**: **5 PRs on Spoke authored by Spoke.**
 
 - [x] S-8.1: Deploy to GCP
   - Created: Dockerfiles for all 4 apps (`slack-edge`, `whatsapp-edge`, `orchestrator`, `operator-ui`)
@@ -109,7 +109,7 @@
   - Updated: `docker-compose.local.yml` — slack-edge + whatsapp-edge services
   - Status: **Complete** — Ready for `terraform apply`
 - [ ] S-8.2-8.7: Dogfooding (5 PRs)
-  - Status: **Pending** — Manual process: deploy Harness, send tasks from Slack, review & merge PRs
+  - Status: **Pending** — Manual process: deploy Spoke, send tasks from Slack, review & merge PRs
 
 ## Verification Folder
 - [x] Created: `docs/verification/VERIFICATION.md` — step-by-step verification instructions for all 8 weeks

@@ -8,7 +8,7 @@ describe('env', () => {
   it('returns default DATABASE_URL when env var is not set', async () => {
     vi.resetModules();
     const { env } = await import('../env.js');
-    expect(env.DATABASE_URL).toBe('postgresql://harness:harness_dev@localhost:5432/harness_dev');
+    expect(env.DATABASE_URL).toBe('postgresql://spoke:spoke_dev@localhost:5432/spoke_dev');
   });
 
   it('reads DATABASE_URL from process.env when set', async () => {
@@ -162,10 +162,10 @@ describe('env', () => {
     expect(env.WHATSAPP_WEBHOOK_VERIFY_TOKEN).toBe('custom_verify');
   });
 
-  it('defaults WHATSAPP_WEBHOOK_VERIFY_TOKEN to harness_verify_token', async () => {
+  it('defaults WHATSAPP_WEBHOOK_VERIFY_TOKEN to spoke_verify_token', async () => {
     vi.resetModules();
     const { env } = await import('../env.js');
-    expect(env.WHATSAPP_WEBHOOK_VERIFY_TOKEN).toBe('harness_verify_token');
+    expect(env.WHATSAPP_WEBHOOK_VERIFY_TOKEN).toBe('spoke_verify_token');
   });
 
   it('defaults OPENROUTER_API_KEY to empty string when not set', async () => {

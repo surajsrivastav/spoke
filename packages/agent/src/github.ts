@@ -1,5 +1,5 @@
 import { executeGit } from './tools.js';
-import { env } from '@harness/shared';
+import { env } from '@spoke/shared';
 
 function slugify(text: string): string {
   return text
@@ -16,16 +16,16 @@ export async function pushBranch(
   taskId?: string,
 ): Promise<{ branch: string }> {
   const branchSuffix = slugify(goal);
-  const branch = taskId ? `harness/${taskId}-${branchSuffix}` : `harness/${branchSuffix}`;
+  const branch = taskId ? `spoke/${taskId}-${branchSuffix}` : `spoke/${branchSuffix}`;
 
-  await executeGit(sandboxId, ['-C', '/repo', 'config', 'user.name', 'Harness Agent']);
-  await executeGit(sandboxId, ['-C', '/repo', 'config', 'user.email', 'harness@agent.dev']);
+  await executeGit(sandboxId, ['-C', '/repo', 'config', 'user.name', 'Spoke Agent']);
+  await executeGit(sandboxId, ['-C', '/repo', 'config', 'user.email', 'spoke@agent.dev']);
   await executeGit(sandboxId, ['-C', '/repo', 'checkout', '-b', branch]);
   await executeGit(sandboxId, ['-C', '/repo', 'add', '-A']);
 
   const status = await executeGit(sandboxId, ['-C', '/repo', 'status', '--porcelain']);
   if (status.stdout.trim()) {
-    await executeGit(sandboxId, ['-C', '/repo', 'commit', '-m', `Harness: ${goal}`]);
+    await executeGit(sandboxId, ['-C', '/repo', 'commit', '-m', `Spoke: ${goal}`]);
   }
 
   const remote = repoUrl.replace('https://', `https://${env.GH_TOKEN}@`);

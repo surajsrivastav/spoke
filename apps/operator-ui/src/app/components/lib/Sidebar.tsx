@@ -36,7 +36,7 @@ export default function Sidebar() {
               letterSpacing: "-0.02em",
             }}
           >
-            HARNESS
+            SPOKE
           </span>
         </div>
         <div

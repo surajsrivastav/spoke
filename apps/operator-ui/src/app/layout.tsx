@@ -4,7 +4,7 @@ import CommandPalette from "./components/CommandPalette";
 import AppLayout from "./components/lib/AppLayout";
 
 export const metadata: Metadata = {
-  title: "Harness Operator UI",
+  title: "Spoke Operator UI",
   description: "Monitor and manage autonomous coding agents",
 };
 

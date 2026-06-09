@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Task, TaskRun } from "@harness/shared";
+import type { Task, TaskRun } from "@spoke/shared";
 import ProvenanceTree from "../../components/ProvenanceTree";
 
 interface TaskDetail extends Task {
   task_runs: (TaskRun & {
-    provenances: import("@harness/shared").Provenance[];
+    provenances: import("@spoke/shared").Provenance[];
   })[];
 }
 

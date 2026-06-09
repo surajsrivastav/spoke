@@ -1,8 +1,8 @@
-# HARNESS
+# SPOKE
 
 **Open Source Product Requirements Document — v2.0**
 
-Cloud-First Monetisation Strategy — OSS is free forever. Enterprise features live in Harness Cloud only.
+Cloud-First Monetisation Strategy — OSS is free forever. Enterprise features live in Spoke Cloud only.
 
 | Field | Value |
 |-------|-------|
@@ -10,20 +10,20 @@ Cloud-First Monetisation Strategy — OSS is free forever. Enterprise features l
 | Author | Suraj (Distinguished Engineer, Ford Motor Company) |
 | Status | Draft |
 | Date | May 2026 |
-| License | AGPL v3 (OSS core) + Harness Cloud (paid) |
-| Key change from v1 | SSO, RBAC, compliance moved exclusively to Harness Cloud |
+| License | AGPL v3 (OSS core) + Spoke Cloud (paid) |
+| Key change from v1 | SSO, RBAC, compliance moved exclusively to Spoke Cloud |
 
 ---
 
 ## 1. Strategy: The Cloud-First Model
 
-The v1 PRD proposed three revenue streams: Harness Cloud, Enterprise Self-Hosted License, and Consulting. This version makes a decisive simplification: SSO, RBAC, security compliance, and all enterprise governance features are exclusive to Harness Cloud. There is no enterprise self-hosted tier.
+The v1 PRD proposed three revenue streams: Spoke Cloud, Enterprise Self-Hosted License, and Consulting. This version makes a decisive simplification: SSO, RBAC, security compliance, and all enterprise governance features are exclusive to Spoke Cloud. There is no enterprise self-hosted tier.
 
 ### 1.1 The Model
 
-| Dimension | OSS (Free) | Harness Cloud (Paid) |
+| Dimension | OSS (Free) | Spoke Cloud (Paid) |
 |-----------|-----------|---------------------|
-| Hosting | Self-hosted (Docker Compose, Helm) | Managed by Harness |
+| Hosting | Self-hosted (Docker Compose, Helm) | Managed by Spoke |
 | Price | Free forever | $299 / $999 / $4,999 per month |
 | SSO / SAML / OIDC | No | Yes — Enterprise tier only |
 | RBAC | No | Yes — Enterprise tier only |
@@ -54,7 +54,7 @@ The OSS version is not crippled. It has everything an operator needs to run a re
 - All agent adapters (LangGraph, AutoGen, custom)
 - GitHub Action, MCP Server, CLI with TUI
 - YAML pipeline definitions
-- Harness Hub template marketplace
+- Spoke Hub template marketplace
 
 **What it does not have**: managed hosting, SSO, RBAC, compliance exports, SLA, dedicated support.
 
@@ -62,11 +62,11 @@ The OSS version is not crippled. It has everything an operator needs to run a re
 
 > ⚠️ Open question: Air-gapped enterprises (Ford)
 
-Ford and similarly regulated enterprises cannot send production code to external cloud. If SSO and compliance are cloud-only, Ford cannot use the paid Harness product. Two paths:
+Ford and similarly regulated enterprises cannot send production code to external cloud. If SSO and compliance are cloud-only, Ford cannot use the paid Spoke product. Two paths:
 
-- **(A) Cloud only (current)** — Harness Cloud runs on Harness infrastructure. Customers send tasks to cloud. Simple subscription. Not Ford-viable.
-- **(B) Cloud On-Prem** — Harness team deploys and manages Harness inside customer VPC. Customer pays for this service. Premium subscription + setup fee. Ford-viable.
-- ~~(C) Enterprise self-hosted (v1 model)~~ — Customer runs Helm chart themselves. Harness sells a commercial license. Adds operational support burden with low margin — avoid.
+- **(A) Cloud only (current)** — Spoke Cloud runs on Spoke infrastructure. Customers send tasks to cloud. Simple subscription. Not Ford-viable.
+- **(B) Cloud On-Prem** — Spoke team deploys and manages Spoke inside customer VPC. Customer pays for this service. Premium subscription + setup fee. Ford-viable.
+- ~~(C) Enterprise self-hosted (v1 model)~~ — Customer runs Helm chart themselves. Spoke sells a commercial license. Adds operational support burden with low margin — avoid.
 
 **Recommendation**: Start with Option A (cloud only). Add Option B (Cloud On-Prem) as a Phase 3 premium offering at $10,000+/month.
 
@@ -79,7 +79,7 @@ Ford and similarly regulated enterprises cannot send production code to external
 | | OSS | STARTER | GROWTH | ENTERPRISE |
 |---|-----|---------|--------|------------|
 | Price | Free forever | $299/mo | $999/mo | $4,999/mo |
-| Hosting | Self-hosted | Harness Cloud | Harness Cloud | Harness Cloud |
+| Hosting | Self-hosted | Spoke Cloud | Spoke Cloud | Spoke Cloud |
 | Concurrent agents | 50 | 50 | 300 | 2,000 |
 | Tasks / mo | Unlimited | 50 | 300 | 2,000 |
 | Operators | Unlimited | 3 | 10 | Unlimited |
@@ -129,21 +129,21 @@ Annual contracts improve cash flow, reduce churn, and justify longer sales cycle
 
 ## 3. Feature Split: OSS vs Cloud
 
-> **Legend**: OSS = included in open source (free forever) | Cloud = Harness Cloud only (paid)
+> **Legend**: OSS = included in open source (free forever) | Cloud = Spoke Cloud only (paid)
 
 | ID | Feature | Description | Tier |
 |----|---------|-------------|------|
 | F-01 | Docker Compose | Full local stack in one command: Temporal, Postgres, sandbox, UI. Zero cloud accounts. | OSS |
-| F-02 | CLI + TUI | `harness run "..."` with live terminal: steps, cost, kill switch, tool calls. | OSS |
+| F-02 | CLI + TUI | `spoke run "..."` with live terminal: steps, cost, kill switch, tool calls. | OSS |
 | F-03 | Bring Your Own Agent | Register any agent: LangGraph, AutoGen, CLI wrapper, custom function. | OSS |
 | F-04 | Provenance engine | Append-only audit log. Every tool call, file changed, model response. | OSS |
 | F-05 | Operator dashboard | Live fleet view. Kill any task. Cost tracking. SSE real-time updates. | OSS |
 | F-06 | GitHub Action | Label an issue → agent runs → PR opens. Passive distribution. | OSS |
-| F-07 | MCP Server | Harness as MCP tool. Claude Code and Cursor can call `harness.run_parallel()`. | OSS |
+| F-07 | MCP Server | Spoke as MCP tool. Claude Code and Cursor can call `spoke.run_parallel()`. | OSS |
 | F-08 | LangGraph adapter | Native Python adapter for LangGraph compiled graphs. | OSS |
 | F-09 | AutoGen adapter | Native adapter for Microsoft AutoGen agents. | OSS |
 | F-10 | YAML pipelines | Declarative multi-agent workflows. plan → implement → review → pr. | OSS |
-| F-11 | Harness Hub (templates) | Community template marketplace. Publish and consume agent task templates. | OSS |
+| F-11 | Spoke Hub (templates) | Community template marketplace. Publish and consume agent task templates. | OSS |
 | F-12 | OpenTelemetry export | Emit OTEL spans to Datadog, Grafana, Jaeger. Plugs into existing observability. | OSS |
 | F-13 | Managed hosting | We run the server. No infra management. Auto-scaling. Backups. | Cloud |
 | F-14 | SSO — SAML, OIDC | Google Workspace, Okta, Azure AD, any SAML 2.0 provider. | Cloud |
@@ -166,7 +166,7 @@ Annual contracts improve cash flow, reduce churn, and justify longer sales cycle
 
 ### Phase 0: Foundation — Weeks 1–8 — Internal MVP
 
-Build the core loop. Private repo. 5 PRs on Harness by Harness. No cloud product yet.
+Build the core loop. Private repo. 5 PRs on Spoke by Spoke. No cloud product yet.
 
 | Features | Status |
 |----------|--------|
@@ -188,21 +188,21 @@ Go public. Docker Compose. CLI TUI. BYOA. GitHub Action. MCP Server. HackerNews 
 | GitHub Action | OSS | Passive distribution in every repo |
 | MCP Server | OSS | Anthropic ecosystem distribution |
 | AGPL v3 license published | OSS | OSS strategy formalised |
-| Harness Cloud waitlist opens | Cloud | Start collecting enterprise interest |
+| Spoke Cloud waitlist opens | Cloud | Start collecting enterprise interest |
 
 ### Phase 2: Cloud Beta — Months 4–9 — Paid Cloud Launch — First Revenue
 
-Launch Harness Cloud as a paid product. Starter and Growth tiers. No SSO yet (that is Enterprise). Build community integrations.
+Launch Spoke Cloud as a paid product. Starter and Growth tiers. No SSO yet (that is Enterprise). Build community integrations.
 
 | Features | Tier | Revenue impact |
 |----------|------|----------------|
-| Harness Cloud Starter ($299/mo) | Cloud | First MRR |
-| Harness Cloud Growth ($999/mo) | Cloud | Primary growth vehicle |
+| Spoke Cloud Starter ($299/mo) | Cloud | First MRR |
+| Spoke Cloud Growth ($999/mo) | Cloud | Primary growth vehicle |
 | LangGraph + AutoGen adapters | OSS | Python/ML community unlock |
 | LangSmith / Langfuse export | OSS | Existing observability teams |
 | n8n node | OSS | 50K+ n8n community |
 | VS Code extension | OSS | Developer distribution |
-| Harness Hub templates (beta) | OSS | Community contributions |
+| Spoke Hub templates (beta) | OSS | Community contributions |
 | Cost dashboard (Cloud) | Cloud | CFO answer for spend visibility |
 | GKE migration (250 agents) | Cloud | Infrastructure for scale |
 
@@ -212,7 +212,7 @@ Launch Enterprise tier with SSO, RBAC, and compliance. First enterprise deals. 1
 
 | Features | Tier | Revenue impact |
 |----------|------|----------------|
-| Harness Cloud Enterprise ($4,999/mo) | Cloud | Primary ARR driver |
+| Spoke Cloud Enterprise ($4,999/mo) | Cloud | Primary ARR driver |
 | SSO — SAML, OIDC, Okta, Google | Cloud (Enterprise only) | Procurement checkbox #1 |
 | RBAC + team scoping | Cloud (Enterprise only) | Multi-team enterprise requirement |
 | SOC2 Type II report | Cloud (Enterprise only) | Security review checkbox |
@@ -228,7 +228,7 @@ Launch Enterprise tier with SSO, RBAC, and compliance. First enterprise deals. 1
 
 | Features | Tier |
 |----------|------|
-| Harness Hub marketplace with revenue sharing | OSS + Cloud |
+| Spoke Hub marketplace with revenue sharing | OSS + Cloud |
 | Agent certification programme | OSS |
 | Fleet intelligence (ML-optimised routing) | Cloud |
 | Plugin API (sandbox, model, observability providers) | OSS |
@@ -241,7 +241,7 @@ Launch Enterprise tier with SSO, RBAC, and compliance. First enterprise deals. 1
 
 ### 5.1 Cloud Revenue Model
 
-All revenue comes from Harness Cloud. No enterprise self-hosted license. No consulting (until Phase 3+).
+All revenue comes from Spoke Cloud. No enterprise self-hosted license. No consulting (until Phase 3+).
 
 | Month | Starter teams | Growth teams | Enterprise teams | MRR | ARR run-rate |
 |-------|--------------|-------------|-----------------|-----|-------------|
@@ -281,7 +281,7 @@ At Month 18: 100 Starter + 45 Growth + 10 Enterprise = $83,390 MRR = **$1.0M ARR
 | Enterprise needs on-prem (Ford) | High | Cloud On-Prem option in Phase 3. Until then, accept limitation and focus on cloud-friendly enterprises. |
 | Free OSS users never convert to Cloud | Medium | SSO and RBAC are genuine enterprise requirements, not artificial limits. Teams that grow past 10 operators will need RBAC naturally. |
 | Competitors copy OSS and offer cheaper cloud | Medium | AGPL v3 requires them to open source modifications. Enterprise relationships and support quality are not replicable by commodity cloud. |
-| Persistent server complexity deters self-hosters | Low | Docker Compose makes local setup trivial. Helm chart makes production setup documented. Harness Cloud removes all infra burden. |
+| Persistent server complexity deters self-hosters | Low | Docker Compose makes local setup trivial. Helm chart makes production setup documented. Spoke Cloud removes all infra burden. |
 
 ---
 
@@ -296,9 +296,9 @@ At Month 18: 100 Starter + 45 Growth + 10 Enterprise = $83,390 MRR = **$1.0M ARR
 | MCP Server | — | ✓ | ✓ | ✓ | ✓ | OSS |
 | LangGraph / AutoGen | — | — | ✓ | ✓ | ✓ | OSS |
 | YAML pipelines | — | — | ✓ | ✓ | ✓ | OSS |
-| Harness Hub | — | — | Beta | ✓ | ✓ | OSS |
-| Harness Cloud Starter/Growth | — | — | Beta | ✓ | ✓ | Cloud |
-| Harness Cloud Enterprise | — | — | — | ✓ | ✓ | Cloud |
+| Spoke Hub | — | — | Beta | ✓ | ✓ | OSS |
+| Spoke Cloud Starter/Growth | — | — | Beta | ✓ | ✓ | Cloud |
+| Spoke Cloud Enterprise | — | — | — | ✓ | ✓ | Cloud |
 | SSO / SAML / OIDC | — | — | — | ✓ | ✓ | Cloud (Ent) |
 | RBAC | — | — | — | ✓ | ✓ | Cloud (Ent) |
 | SOC2 | — | — | — | ✓ | ✓ | Cloud (Ent) |

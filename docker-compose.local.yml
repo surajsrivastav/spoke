@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: harness
-      POSTGRES_PASSWORD: harness_dev
-      POSTGRES_DB: harness_dev
+      POSTGRES_USER: spoke
+      POSTGRES_PASSWORD: spoke_dev
+      POSTGRES_DB: spoke_dev
     ports:
       - "5432:5432"
     volumes:
-      - harness_pg_data:/var/lib/postgresql/data
+      - spoke_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U harness"]
+      test: ["CMD-SHELL", "pg_isready -U spoke"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,8 +22,8 @@ services:
     environment:
       DB: postgres12
       DB_PORT: 5432
-      POSTGRES_USER: harness
-      POSTGRES_PWD: harness_dev
+      POSTGRES_USER: spoke
+      POSTGRES_PWD: spoke_dev
       POSTGRES_SEEDS: postgres
       TEMPORAL_ADDRESS: temporal:7233
     depends_on:
@@ -92,4 +92,4 @@ services:
         condition: service_healthy
 
 volumes:
-  harness_pg_data:
+  spoke_pg_data:

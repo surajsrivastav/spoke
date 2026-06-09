@@ -1,4 +1,4 @@
-import { prisma, Prisma } from '@harness/db';
+import { prisma, Prisma } from '@spoke/db';
 import { randomUUID } from 'node:crypto';
 
 export async function writeProvenance(data: {

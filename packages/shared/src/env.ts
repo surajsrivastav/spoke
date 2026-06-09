@@ -1,6 +1,6 @@
 export const env = {
   // Database
-  DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://harness:harness_dev@localhost:5432/harness_dev',
+  DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://spoke:spoke_dev@localhost:5432/spoke_dev',
 
   // Model provider
   MODEL_PROVIDER: (process.env.MODEL_PROVIDER ?? 'openrouter') as 'openrouter' | 'anthropic' | 'litellm' | 'copilot' | 'github-models' | 'ollama',
@@ -18,7 +18,7 @@ export const env = {
   // WhatsApp
   WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN ?? '',
   WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID ?? '',
-  WHATSAPP_WEBHOOK_VERIFY_TOKEN: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? 'harness_verify_token',
+  WHATSAPP_WEBHOOK_VERIFY_TOKEN: process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? 'spoke_verify_token',
 
   // GitHub
   GH_TOKEN: process.env.GH_TOKEN ?? '',

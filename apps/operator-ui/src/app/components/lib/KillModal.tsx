@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { Task } from "@harness/shared";
+import type { Task } from "@spoke/shared";
 import { STATUS_CONFIG } from "../../lib/constants";
 
 interface KillModalProps {

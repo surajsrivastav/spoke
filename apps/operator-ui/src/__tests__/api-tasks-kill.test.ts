@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { prisma } from '@harness/db';
+import { prisma } from '@spoke/db';
 import { POST } from '../app/api/tasks/[id]/kill/route';
 
-vi.mock('@harness/db', () => ({
+vi.mock('@spoke/db', () => ({
   prisma: {
     task: {
       findMany: vi.fn(),

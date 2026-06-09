@@ -42,5 +42,5 @@ locals {
     "anthropic-api-key",
   ]
 
-  image_base = "us-central1-docker.pkg.dev/${var.project_id}/harness"
+  image_base = "us-central1-docker.pkg.dev/${var.project_id}/spoke"
 }

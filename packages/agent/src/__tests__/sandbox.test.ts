@@ -19,11 +19,11 @@ describe('sandbox', () => {
 
       expect(mockExecSync).toHaveBeenCalledTimes(2);
       expect(mockExecSync).toHaveBeenNthCalledWith(1,
-        expect.stringContaining('docker run -d --name harness-sbx-mock-uuid'),
+        expect.stringContaining('docker run -d --name spoke-sbx-mock-uuid'),
         expect.objectContaining({ timeout: 30_000 }),
       );
       expect(mockExecSync).toHaveBeenNthCalledWith(2,
-        expect.stringContaining('docker exec harness-sbx-mock-uuid sh -c "apk add --no-cache git openssh'),
+        expect.stringContaining('docker exec spoke-sbx-mock-uuid sh -c "apk add --no-cache git openssh'),
         expect.objectContaining({ timeout: 120_000 }),
       );
       expect(result).toEqual({ sandboxId: 'mock-uuid' });
@@ -51,7 +51,7 @@ describe('sandbox', () => {
       await destroySandbox('mock-uuid');
 
       expect(mockExecSync).toHaveBeenCalledWith(
-        'docker rm -f harness-sbx-mock-uuid',
+        'docker rm -f spoke-sbx-mock-uuid',
         expect.objectContaining({ timeout: 30_000 }),
       );
     });

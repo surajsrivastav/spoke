@@ -1,5 +1,5 @@
 {
-  "name": "@harness/provenance",
+  "name": "@spoke/provenance",
   "version": "0.0.1",
   "type": "module",
   "main": "./src/index.ts",
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@harness/db": "workspace:*"
+    "@spoke/db": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

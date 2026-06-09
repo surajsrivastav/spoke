@@ -142,6 +142,6 @@ resource "google_cloud_run_v2_service" "services" {
 resource "google_service_account" "cloud_run_sa" {
   for_each = toset(local.cloud_run_services)
 
-  account_id   = "harness-${each.key}-sa"
+  account_id   = "spoke-${each.key}-sa"
   display_name = "Service Account for ${each.key}"
 }

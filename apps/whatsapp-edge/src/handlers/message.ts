@@ -52,8 +52,8 @@ incomingMessage.post('/whatsapp', async (c) => {
 
           console.log(`[whatsapp] message from ${contactName} (${from}): ${text}`)
 
-          if (text.startsWith('@harness') || text.startsWith('/harness')) {
-            const goal = text.replace(/^@harness\s*/i, '').replace(/^\/harness\s*/i, '').trim()
+          if (text.startsWith('@spoke') || text.startsWith('/spoke')) {
+            const goal = text.replace(/^@spoke\s*/i, '').replace(/^\/spoke\s*/i, '').trim()
             console.log(`[whatsapp] creating task: "${goal}" (from ${from})`)
           }
 

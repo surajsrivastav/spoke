@@ -15,7 +15,7 @@ const mockCreateProvider = vi.hoisted(() => vi.fn(() => ({
   createMessage: mockCreateMessage,
 })));
 
-vi.mock('@harness/shared', () => ({
+vi.mock('@spoke/shared', () => ({
   env: mockEnv,
 }));
 

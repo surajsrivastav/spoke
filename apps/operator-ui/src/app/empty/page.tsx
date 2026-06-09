@@ -40,7 +40,7 @@ export default function EmptyPage() {
           lineHeight: 1.6,
         }}
       >
-        Send @harness &lt;goal&gt; in Slack
+        Send @spoke &lt;goal&gt; in Slack
         <br />
         or start a task from the CLI.
       </div>

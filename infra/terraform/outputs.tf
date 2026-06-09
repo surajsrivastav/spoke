@@ -1,11 +1,11 @@
 output "cloud_sql_instance_name" {
   description = "The name of the Cloud SQL instance"
-  value       = google_sql_database_instance.harness.name
+  value       = google_sql_database_instance.spoke.name
 }
 
 output "cloud_sql_private_ip" {
   description = "Private IP of the Cloud SQL instance"
-  value       = google_sql_database_instance.harness.private_ip_address
+  value       = google_sql_database_instance.spoke.private_ip_address
 }
 
 output "cloud_run_urls" {

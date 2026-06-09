@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import type { Task } from "@harness/shared";
+import type { Task } from "@spoke/shared";
 
 type Command = {
   id: string;

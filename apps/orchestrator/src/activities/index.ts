@@ -1,6 +1,6 @@
-import { prisma } from '@harness/db';
-import type { TaskStatus } from '@harness/shared';
-import { env } from '@harness/shared';
+import { prisma } from '@spoke/db';
+import type { TaskStatus } from '@spoke/shared';
+import { env } from '@spoke/shared';
 import { randomUUID } from 'node:crypto';
 import {
   provisionSandbox as realProvisionSandbox,
@@ -10,8 +10,8 @@ import {
   pushBranch as realPushBranch,
   createPr as realCreatePr,
   executeShell,
-} from '@harness/agent';
-import { writeProvenance } from '@harness/provenance';
+} from '@spoke/agent';
+import { writeProvenance } from '@spoke/provenance';
 
 export async function updateTaskStatus(taskId: string, status: TaskStatus): Promise<{ ok: true }> {
   console.log(`[activity] updateTaskStatus: taskId=${taskId}, status=${status}`);
@@ -56,7 +56,7 @@ export async function cloneRepo(sandboxId: string, repoUrl: string, taskRunId: s
   const authUrl = repoUrl.replace('https://', `https://oauth2:${env.GH_TOKEN}@`);
   await executeShell(sandboxId, `git clone ${authUrl} /repo`);
   await executeShell(sandboxId, 'cd /repo && git remote set-url origin ' + repoUrl);
-  await executeShell(sandboxId, 'cd /repo && git config user.name "Harness Agent" && git config user.email "harness@agent.dev"');
+  await executeShell(sandboxId, 'cd /repo && git config user.name "Spoke Agent" && git config user.email "spoke@agent.dev"');
   return { ok: true };
 }
 

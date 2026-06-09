@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Task, TaskStatus } from "@harness/shared";
+import type { Task, TaskStatus } from "@spoke/shared";
 
 const STATUS_COLORS: Record<string, string> = {
   running: "bg-blue-500",

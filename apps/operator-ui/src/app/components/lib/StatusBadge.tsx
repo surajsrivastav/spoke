@@ -1,6 +1,6 @@
 "use client";
 
-import type { TaskStatus } from "@harness/shared";
+import type { TaskStatus } from "@spoke/shared";
 import { STATUS_CONFIG } from "../../lib/constants";
 
 export function StatusBadge({ status }: { status: TaskStatus }) {

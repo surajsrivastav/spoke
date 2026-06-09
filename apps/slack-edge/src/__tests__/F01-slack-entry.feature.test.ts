@@ -10,7 +10,7 @@ vi.mock('node:crypto', () => ({
   randomUUID: () => 'mock-uuid',
 }));
 
-vi.mock('@harness/db', () => ({
+vi.mock('@spoke/db', () => ({
   prisma: { task: { create: mockTaskCreate } },
 }));
 
@@ -20,7 +20,7 @@ vi.mock('@slack/web-api', () => ({
   })),
 }));
 
-vi.mock('@harness/shared', () => ({
+vi.mock('@spoke/shared', () => ({
   env: { SLACK_BOT_TOKEN: 'test_bot_token' },
 }));
 

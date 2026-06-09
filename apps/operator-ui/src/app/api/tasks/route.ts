@@ -1,4 +1,4 @@
-import { prisma } from "@harness/db";
+import { prisma } from "@spoke/db";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       id: crypto.randomUUID(),
       goal,
       repo_url,
-      branch_target: `harness/${Date.now().toString(36)}`,
+      branch_target: `spoke/${Date.now().toString(36)}`,
       status: "pending",
       created_by: "demo",
     },

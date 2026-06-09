@@ -6,9 +6,9 @@ COPY apps/operator-ui/package.json apps/operator-ui/
 COPY packages/ packages/
 RUN pnpm install --no-frozen-lockfile --ignore-scripts
 RUN pnpm rebuild
-RUN pnpm --filter @harness/db generate
+RUN pnpm --filter @spoke/db generate
 COPY apps/operator-ui/ apps/operator-ui/
-RUN pnpm --filter @harness/operator-ui build
+RUN pnpm --filter @spoke/operator-ui build
 
 FROM node:20-bullseye-slim
 WORKDIR /app/apps/operator-ui

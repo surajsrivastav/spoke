@@ -16,7 +16,7 @@ vi.mock('@temporalio/worker', () => ({
   Worker: { create: vi.fn().mockResolvedValue({ run: vi.fn() }) },
 }));
 
-vi.mock('@harness/db', () => ({
+vi.mock('@spoke/db', () => ({
   prisma: { task: { findMany: vi.fn(), update: vi.fn() }, taskRun: { create: vi.fn() }, pullRequest: { create: vi.fn() } },
 }));
 
@@ -36,7 +36,7 @@ describe('startAgentTask', () => {
     expect(Client).toHaveBeenCalledWith(expect.objectContaining({ connection: expect.anything() }));
     expect(mockClientStart).toHaveBeenCalledWith('agentTaskWorkflow', {
       args: [{ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' }],
-      taskQueue: 'harness-task-queue',
+      taskQueue: 'spoke-task-queue',
       workflowId: 'agent-task-task-1',
     });
     expect(mockConnectionClose).toHaveBeenCalled();

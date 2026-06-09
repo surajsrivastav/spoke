@@ -1,4 +1,4 @@
-import type { TaskStatus } from "@harness/shared";
+import type { TaskStatus } from "@spoke/shared";
 
 export const STATUS_CONFIG: Record<
   TaskStatus,

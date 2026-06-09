@@ -6,9 +6,9 @@ COPY apps/orchestrator/package.json apps/orchestrator/
 COPY packages/ packages/
 RUN pnpm install --no-frozen-lockfile --ignore-scripts
 RUN pnpm rebuild
-RUN pnpm --filter @harness/db generate
+RUN pnpm --filter @spoke/db generate
 COPY apps/orchestrator/ apps/orchestrator/
-RUN pnpm --filter @harness/orchestrator build
+RUN pnpm --filter @spoke/orchestrator build
 
 FROM node:20-bullseye-slim
 WORKDIR /app

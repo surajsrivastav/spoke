@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { Task, TaskRun } from "@harness/shared";
-import { generateTaskName } from "@harness/shared";
+import type { Task, TaskRun } from "@spoke/shared";
+import { generateTaskName } from "@spoke/shared";
 import { STATUS_CONFIG } from "./lib/constants";
 import { StatusBadge, StatusDot } from "./components/lib/StatusBadge";
 import { ProgressBar } from "./components/lib/ProgressBar";
@@ -307,7 +307,7 @@ export default function FleetPage() {
               No active tasks
             </div>
             <div style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)", marginBottom: 20 }}>
-              Send @harness &lt;goal&gt; in Slack or start a task from the CLI.
+              Send @spoke &lt;goal&gt; in Slack or start a task from the CLI.
             </div>
             <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
               <button

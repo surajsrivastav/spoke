@@ -16,7 +16,7 @@ afterAll(() => {
   process.env.WHATSAPP_PHONE_NUMBER_ID = originalPhoneNumberId;
 });
 
-describe('harness command edge cases', () => {
+describe('spoke command edge cases', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -28,7 +28,7 @@ describe('harness command edge cases', () => {
     consoleSpy.mockRestore();
   });
 
-  it('/harness with no space (like /harnessgoal) extracts goal correctly', async () => {
+  it('/spoke with no space (like /spokegoal) extracts goal correctly', async () => {
     const { app } = await import('../index.js');
     const body = {
       object: 'whatsapp_business_account',
@@ -39,7 +39,7 @@ describe('harness command edge cases', () => {
             messaging_product: 'whatsapp',
             metadata: { display_phone_number: '15551234567', phone_number_id: '456' },
             contacts: [{ profile: { name: 'John' }, wa_id: '15559876543' }],
-            messages: [{ from: '15559876543', id: 'msg1', timestamp: '1234567890', type: 'text', text: { body: '/harnessgoal' } }],
+            messages: [{ from: '15559876543', id: 'msg1', timestamp: '1234567890', type: 'text', text: { body: '/spokegoal' } }],
           },
           field: 'messages',
         }],
@@ -58,7 +58,7 @@ describe('harness command edge cases', () => {
     );
   });
 
-  it('/harness with multiple spaces uses correct regex semantics', async () => {
+  it('/spoke with multiple spaces uses correct regex semantics', async () => {
     const { app } = await import('../index.js');
     const body = {
       object: 'whatsapp_business_account',
@@ -69,7 +69,7 @@ describe('harness command edge cases', () => {
             messaging_product: 'whatsapp',
             metadata: { display_phone_number: '15551234567', phone_number_id: '456' },
             contacts: [{ profile: { name: 'John' }, wa_id: '15559876543' }],
-            messages: [{ from: '15559876543', id: 'msg1', timestamp: '1234567890', type: 'text', text: { body: '/harness   goal' } }],
+            messages: [{ from: '15559876543', id: 'msg1', timestamp: '1234567890', type: 'text', text: { body: '/spoke   goal' } }],
           },
           field: 'messages',
         }],
@@ -88,7 +88,7 @@ describe('harness command edge cases', () => {
     );
   });
 
-  it('/harness with trailing spaces checks trim behavior', async () => {
+  it('/spoke with trailing spaces checks trim behavior', async () => {
     const { app } = await import('../index.js');
     const body = {
       object: 'whatsapp_business_account',
@@ -99,7 +99,7 @@ describe('harness command edge cases', () => {
             messaging_product: 'whatsapp',
             metadata: { display_phone_number: '15551234567', phone_number_id: '456' },
             contacts: [{ profile: { name: 'John' }, wa_id: '15559876543' }],
-            messages: [{ from: '15559876543', id: 'msg1', timestamp: '1234567890', type: 'text', text: { body: '/harness goal   ' } }],
+            messages: [{ from: '15559876543', id: 'msg1', timestamp: '1234567890', type: 'text', text: { body: '/spoke goal   ' } }],
           },
           field: 'messages',
         }],

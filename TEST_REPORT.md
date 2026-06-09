@@ -1,4 +1,4 @@
-# Harness — Test Report
+# Spoke — Test Report
 
 **313 tests, 0 failures, 33 test files, 7 packages**
 
@@ -23,13 +23,13 @@
 
 | Package | Test Files | Tests | Key Areas |
 |---------|-----------|-------|-----------|
-| `@harness/shared` | 2 | 36 | Types, env validation |
-| `@harness/agent` | 5 | 65 | Sandbox lifecycle, agent loop, tools, GitHub, verification |
-| `@harness/provenance` | 2 | 13 | Provenance writes (happy, sad, edge) |
-| `@harness/slack-edge` | 6 | 47 | Slack events, F-01 feature, request verification, server start |
-| `@harness/whatsapp-edge` | 6 | 50 | Webhook, message handling, middleware, env defaults |
-| `@harness/orchestrator` | 5 | 55 | Activities, workflow, F-02 + F-03 features, API handlers |
-| `@harness/operator-ui` | 7 | 47 | API routes, kill switch (F-05), components, constants |
+| `@spoke/shared` | 2 | 36 | Types, env validation |
+| `@spoke/agent` | 5 | 65 | Sandbox lifecycle, agent loop, tools, GitHub, verification |
+| `@spoke/provenance` | 2 | 13 | Provenance writes (happy, sad, edge) |
+| `@spoke/slack-edge` | 6 | 47 | Slack events, F-01 feature, request verification, server start |
+| `@spoke/whatsapp-edge` | 6 | 50 | Webhook, message handling, middleware, env defaults |
+| `@spoke/orchestrator` | 5 | 55 | Activities, workflow, F-02 + F-03 features, API handlers |
+| `@spoke/operator-ui` | 7 | 47 | API routes, kill switch (F-05), components, constants |
 
 ---
 

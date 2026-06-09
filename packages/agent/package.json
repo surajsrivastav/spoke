@@ -1,5 +1,5 @@
 {
-  "name": "@harness/agent",
+  "name": "@spoke/agent",
   "version": "0.0.1",
   "type": "module",
   "main": "./src/index.ts",
@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
-    "@harness/shared": "workspace:*",
+    "@spoke/shared": "workspace:*",
     "openai": "^6.39.1"
   }
 }

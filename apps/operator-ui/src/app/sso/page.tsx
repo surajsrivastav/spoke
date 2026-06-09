@@ -41,7 +41,7 @@ export default function SSOPage() {
         }}
       >
         <span>✦</span>
-        <span>SSO is a Harness Cloud Enterprise feature. Self-hosted OSS does not include SSO.</span>
+        <span>SSO is a Spoke Cloud Enterprise feature. Self-hosted OSS does not include SSO.</span>
         <a href="#" style={{ color: "var(--accent-primary)", fontWeight: 600, textDecoration: "none", marginLeft: "auto" }}>
           Upgrade →
         </a>

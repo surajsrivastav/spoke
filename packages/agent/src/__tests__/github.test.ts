@@ -4,7 +4,7 @@ vi.mock('../tools.js', () => ({
   executeGit: vi.fn(),
 }));
 
-vi.mock('@harness/shared', () => ({
+vi.mock('@spoke/shared', () => ({
   env: { GH_TOKEN: 'test-gh-token' },
 }));
 
@@ -38,16 +38,16 @@ describe('github', () => {
 
       const result = await pushBranch('test-sid', repoUrl, goal, 'task-123');
 
-      expect(result).toEqual({ branch: 'harness/task-123-fix-the-bug' });
+      expect(result).toEqual({ branch: 'spoke/task-123-fix-the-bug' });
       expect(executeGit).toHaveBeenCalledTimes(8);
-      expect(executeGit).toHaveBeenNthCalledWith(1, 'test-sid', ['-C', '/repo', 'config', 'user.name', 'Harness Agent']);
-      expect(executeGit).toHaveBeenNthCalledWith(2, 'test-sid', ['-C', '/repo', 'config', 'user.email', 'harness@agent.dev']);
-      expect(executeGit).toHaveBeenNthCalledWith(3, 'test-sid', ['-C', '/repo', 'checkout', '-b', 'harness/task-123-fix-the-bug']);
+      expect(executeGit).toHaveBeenNthCalledWith(1, 'test-sid', ['-C', '/repo', 'config', 'user.name', 'Spoke Agent']);
+      expect(executeGit).toHaveBeenNthCalledWith(2, 'test-sid', ['-C', '/repo', 'config', 'user.email', 'spoke@agent.dev']);
+      expect(executeGit).toHaveBeenNthCalledWith(3, 'test-sid', ['-C', '/repo', 'checkout', '-b', 'spoke/task-123-fix-the-bug']);
       expect(executeGit).toHaveBeenNthCalledWith(4, 'test-sid', ['-C', '/repo', 'add', '-A']);
       expect(executeGit).toHaveBeenNthCalledWith(5, 'test-sid', ['-C', '/repo', 'status', '--porcelain']);
-      expect(executeGit).toHaveBeenNthCalledWith(6, 'test-sid', ['-C', '/repo', 'commit', '-m', 'Harness: Fix the bug!']);
+      expect(executeGit).toHaveBeenNthCalledWith(6, 'test-sid', ['-C', '/repo', 'commit', '-m', 'Spoke: Fix the bug!']);
       expect(executeGit).toHaveBeenNthCalledWith(7, 'test-sid', ['-C', '/repo', 'remote', 'set-url', 'origin', repoUrl.replace('https://', `https://test-gh-token@`)]);
-      expect(executeGit).toHaveBeenNthCalledWith(8, 'test-sid', ['-C', '/repo', 'push', 'origin', 'harness/task-123-fix-the-bug']);
+      expect(executeGit).toHaveBeenNthCalledWith(8, 'test-sid', ['-C', '/repo', 'push', 'origin', 'spoke/task-123-fix-the-bug']);
     });
 
     it('creates branch without taskId', async () => {
@@ -56,7 +56,7 @@ describe('github', () => {
 
       const result = await pushBranch('test-sid', repoUrl, goal);
 
-      expect(result).toEqual({ branch: 'harness/fix-the-bug' });
+      expect(result).toEqual({ branch: 'spoke/fix-the-bug' });
     });
 
     it('skips commit when there are no changes', async () => {
@@ -72,7 +72,7 @@ describe('github', () => {
       const result = await pushBranch('test-sid', repoUrl, 'noop');
 
       expect(executeGit).toHaveBeenCalledTimes(7);  // no commit call
-      expect(result).toEqual({ branch: 'harness/noop' });
+      expect(result).toEqual({ branch: 'spoke/noop' });
     });
 
     it('throws when push fails', async () => {
@@ -95,7 +95,7 @@ describe('github', () => {
 
       const result = await pushBranch('test-sid', repoUrl, 'Fix 🐛 bug! ✨');
 
-      expect(result).toEqual({ branch: 'harness/fix-bug' });
+      expect(result).toEqual({ branch: 'spoke/fix-bug' });
     });
 
     it('handles goal with leading and trailing special characters', async () => {
@@ -104,7 +104,7 @@ describe('github', () => {
 
       const result = await pushBranch('test-sid', repoUrl, '!!urgent!!');
 
-      expect(result).toEqual({ branch: 'harness/urgent' });
+      expect(result).toEqual({ branch: 'spoke/urgent' });
     });
 
     it('truncates branch name to 50 characters for long goals', async () => {
@@ -114,7 +114,7 @@ describe('github', () => {
       const goal = 'a'.repeat(100);
       const result = await pushBranch('test-sid', repoUrl, goal);
 
-      expect(result.branch).toBe('harness/' + 'a'.repeat(50));
+      expect(result.branch).toBe('spoke/' + 'a'.repeat(50));
     });
 
     it('handles uppercase letters in goal by lowercasing slug', async () => {
@@ -123,7 +123,7 @@ describe('github', () => {
 
       const result = await pushBranch('test-sid', repoUrl, 'FIX THE BUG');
 
-      expect(result).toEqual({ branch: 'harness/fix-the-bug' });
+      expect(result).toEqual({ branch: 'spoke/fix-the-bug' });
     });
 
     it('skips commit when status has only whitespace', async () => {
@@ -139,13 +139,13 @@ describe('github', () => {
       const result = await pushBranch('test-sid', repoUrl, 'whitespace check');
 
       expect(executeGit).toHaveBeenCalledTimes(7);  // no commit call
-      expect(result).toEqual({ branch: 'harness/whitespace-check' });
+      expect(result).toEqual({ branch: 'spoke/whitespace-check' });
     });
   });
 
   describe('createPr', () => {
     const repoUrl = 'https://github.com/owner/my-repo.git';
-    const branch = 'harness/fix-bug';
+    const branch = 'spoke/fix-bug';
 
     it('creates a pull request and returns prUrl and prNumber', async () => {
       mockFetch.mockResolvedValue({
@@ -247,7 +247,7 @@ describe('github', () => {
           body: JSON.stringify({
             title: 'Fix the bug',
             body: 'Description of fix',
-            head: 'harness/fix-bug',
+            head: 'spoke/fix-bug',
             base: 'main',
           }),
         },

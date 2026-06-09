@@ -1,5 +1,5 @@
 {
-  "name": "@harness/slack-edge",
+  "name": "@spoke/slack-edge",
   "version": "0.0.1",
   "type": "module",
   "scripts": {
@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.12.0",
-    "@harness/db": "workspace:*",
-    "@harness/shared": "workspace:*",
+    "@spoke/db": "workspace:*",
+    "@spoke/shared": "workspace:*",
     "@slack/web-api": "^7.0.0",
     "hono": "^4.0.0"
   },

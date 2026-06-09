@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 
 export function containerName(sandboxId: string): string {
-  return `harness-sbx-${sandboxId}`;
+  return `spoke-sbx-${sandboxId}`;
 }
 
 export async function provisionSandbox(): Promise<{ sandboxId: string }> {

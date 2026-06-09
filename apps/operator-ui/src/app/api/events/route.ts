@@ -1,4 +1,4 @@
-import { prisma } from "@harness/db";
+import { prisma } from "@spoke/db";
 
 export const dynamic = "force-dynamic";
 

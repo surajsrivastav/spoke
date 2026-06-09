@@ -14,7 +14,7 @@ if (existsSync(envLocal)) {
   }
 }
 
-import { prisma } from '@harness/db';
+import { prisma } from '@spoke/db';
 
 const RED = '\x1b[31m';
 const YELLOW = '\x1b[33m';
@@ -183,7 +183,7 @@ async function checkRapidFailures() {
 
 async function main() {
   console.log(`${CYAN}╒══════════════════════════════════════╕${RESET}`);
-  console.log(`${CYAN}│  Edge Case Finder — Harness Health   │${RESET}`);
+  console.log(`${CYAN}│  Edge Case Finder — Spoke Health   │${RESET}`);
   console.log(`${CYAN}╘══════════════════════════════════════╛${RESET}\n`);
 
   const t0 = Date.now();

@@ -24,7 +24,7 @@ variable "github_org" {
 variable "github_repo" {
   description = "GitHub repository for workload identity federation"
   type        = string
-  default     = "harness"
+  default     = "spoke"
 }
 
 variable "image_tag" {

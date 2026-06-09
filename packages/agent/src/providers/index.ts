@@ -1,4 +1,4 @@
-import { env } from '@harness/shared';
+import { env } from '@spoke/shared';
 import type { LLMProvider } from './types.js';
 import { createAnthropicProvider } from './anthropic.js';
 import { createOpenAICompatibleProvider } from './openai-compat.js';

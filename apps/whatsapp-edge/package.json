@@ -1,5 +1,5 @@
 {
-  "name": "@harness/whatsapp-edge",
+  "name": "@spoke/whatsapp-edge",
   "version": "0.0.1",
   "type": "module",
   "scripts": {

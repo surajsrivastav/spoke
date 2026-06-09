@@ -46,7 +46,7 @@ describe('WhatsApp webhook server', () => {
   it('GET /webhook with valid verify token returns challenge', async () => {
     const { app } = await import('../index.js');
     const res = await app.request(
-      '/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=harness_verify_token&hub.challenge=12345',
+      '/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=spoke_verify_token&hub.challenge=12345',
     );
     expect(res.status).toBe(200);
     const text = await res.text();

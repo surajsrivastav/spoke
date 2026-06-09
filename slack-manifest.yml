@@ -1,8 +1,8 @@
 display_information:
-  name: Harness
+  name: Spoke
 features:
   bot_user:
-    display_name: Harness
+    display_name: Spoke
     always_online: true
 oauth_config:
   scopes:

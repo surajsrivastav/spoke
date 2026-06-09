@@ -3,7 +3,7 @@ import { writeProvenance } from '../index.js';
 
 const mockCreate = vi.hoisted(() => vi.fn());
 
-vi.mock('@harness/db', () => ({
+vi.mock('@spoke/db', () => ({
   prisma: {
     provenance: {
       create: mockCreate,

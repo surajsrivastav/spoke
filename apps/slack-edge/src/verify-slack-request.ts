@@ -1,6 +1,6 @@
 import { createMiddleware } from 'hono/factory'
 import crypto from 'node:crypto'
-import { env } from '@harness/shared'
+import { env } from '@spoke/shared'
 
 export const verifySlackRequest = createMiddleware(async (c, next) => {
   const timestamp = c.req.header('x-slack-request-timestamp')

@@ -1,7 +1,7 @@
 import { Client } from '@temporalio/client';
 import { NativeConnection, Worker } from '@temporalio/worker';
 import * as activities from './activities/index.js';
-import { env } from '@harness/shared';
+import { env } from '@spoke/shared';
 
 export async function startAgentTask(
   taskId: string,
@@ -21,7 +21,7 @@ export async function startAgentTask(
 
   await client.workflow.start('agentTaskWorkflow', {
     args: [{ taskId, goal, repoUrl }],
-    taskQueue: 'harness-task-queue',
+    taskQueue: 'spoke-task-queue',
     workflowId,
   });
 
@@ -32,7 +32,7 @@ export async function startAgentTask(
 }
 
 async function pollPendingTasks(client: Client) {
-  const { prisma } = await import('@harness/db');
+  const { prisma } = await import('@spoke/db');
   const poll = async () => {
     try {
       const pending = await prisma.task.findMany({
@@ -72,7 +72,7 @@ async function run() {
     connection,
     workflowsPath: new URL('./workflows/agent-task.js', import.meta.url).pathname,
     activities,
-    taskQueue: 'harness-task-queue',
+    taskQueue: 'spoke-task-queue',
   });
 
   console.log('orchestrator worker starting...');

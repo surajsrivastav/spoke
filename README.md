@@ -1,4 +1,4 @@
-# Harness
+# Spoke
 
 **Open source control plane for autonomous coding agent fleets.**  
 Multi-model, self-hosted, bring your own agent. Kill switches and provenance included.
@@ -7,7 +7,7 @@ Multi-model, self-hosted, bring your own agent. Kill switches and provenance inc
 
 ## Overview
 
-Harness is an operator-first platform for running autonomous coding agents at scale. Submit tasks via Slack, WhatsApp, or API — Harness provisions sandboxes, runs agents, verifies output, and creates PRs — all with a kill switch and full provenance chain.
+Spoke is an operator-first platform for running autonomous coding agents at scale. Submit tasks via Slack, WhatsApp, or API — Spoke provisions sandboxes, runs agents, verifies output, and creates PRs — all with a kill switch and full provenance chain.
 
 ![Architecture](docs/diagrams/architecture.png)
 
@@ -35,8 +35,8 @@ Harness is an operator-first platform for running autonomous coding agents at sc
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/surajsrivastav/harness.git
-cd harness
+git clone https://github.com/surajsrivastav/spoke.git
+cd spoke
 pnpm install
 ```
 
@@ -56,7 +56,7 @@ This starts:
 ### 3. Run database migrations
 
 ```bash
-pnpm --filter @harness/db exec prisma migrate deploy
+pnpm --filter @spoke/db exec prisma migrate deploy
 ```
 
 ### 4. Start development servers
@@ -83,7 +83,7 @@ Copy `.env.example` to `.env.local` and configure:
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | `postgresql://harness:harness_dev@localhost:5432/harness_dev` | PostgreSQL connection |
+| `DATABASE_URL` | `postgresql://spoke:spoke_dev@localhost:5432/spoke_dev` | PostgreSQL connection |
 | `DEFAULT_MODEL` | `llama3.2:3b` | Model for agent execution |
 | `MODEL_PROVIDER` | `ollama` | Provider: `ollama`, `openrouter`, `anthropic`, `copilot` |
 | `OLLAMA_BASE_URL` | `http://localhost:11434/v1` | Ollama API endpoint |
@@ -132,7 +132,7 @@ Copy `.env.example` to `.env.local` and configure:
 ### Submit a task via Slack
 
 ```
-@harness Build a todo list app with React
+@spoke Build a todo list app with React
 ```
 
 ### Submit a task via API
@@ -160,8 +160,8 @@ Or click the kill button in the dashboard.
 pnpm test
 
 # Run tests for a specific package
-pnpm --filter @harness/orchestrator test
-pnpm --filter @harness/operator-ui test
+pnpm --filter @spoke/orchestrator test
+pnpm --filter @spoke/operator-ui test
 ```
 
 Current coverage: **332 tests, 0 failures** across 7 packages.

@@ -1,6 +1,6 @@
 const mockExecSync = vi.hoisted(() => vi.fn());
 vi.mock('node:child_process', () => ({ execSync: mockExecSync }));
-vi.mock('../sandbox.js', () => ({ containerName: (id: string) => `harness-sbx-${id}` }));
+vi.mock('../sandbox.js', () => ({ containerName: (id: string) => `spoke-sbx-${id}` }));
 
 import { executeShell, executeReadFile, executeWriteFile, executeGit, toolHandlers } from '../tools.js';
 
@@ -16,7 +16,7 @@ describe('tools', () => {
       const result = await executeShell('test-sid', 'echo hello');
 
       expect(mockExecSync).toHaveBeenCalledWith(
-        'docker exec harness-sbx-test-sid sh -c "echo hello"',
+        'docker exec spoke-sbx-test-sid sh -c "echo hello"',
         expect.objectContaining({ encoding: 'utf-8' }),
       );
       expect(result).toEqual({ stdout: 'hello', stderr: '', exitCode: 0 });
@@ -97,7 +97,7 @@ describe('tools', () => {
       const result = await executeReadFile('test-sid', '/path/to/file.txt');
 
       expect(mockExecSync).toHaveBeenCalledWith(
-        'docker exec harness-sbx-test-sid sh -c "cat /path/to/file.txt"',
+        'docker exec spoke-sbx-test-sid sh -c "cat /path/to/file.txt"',
         expect.any(Object),
       );
       expect(result).toEqual({ stdout: 'file contents', stderr: '', exitCode: 0 });
@@ -124,7 +124,7 @@ describe('tools', () => {
       const result = await executeWriteFile('test-sid', '/path/to/file.txt', 'new content');
 
       expect(mockExecSync).toHaveBeenCalledWith(
-        'docker exec -i harness-sbx-test-sid sh -c "mkdir -p \"/path/to\" && cat > \"/path/to/file.txt\""',
+        'docker exec -i spoke-sbx-test-sid sh -c "mkdir -p \"/path/to\" && cat > \"/path/to/file.txt\""',
         expect.objectContaining({ input: 'new content' }),
       );
       expect(result).toEqual({ stdout: 'File written to /path/to/file.txt', stderr: '', exitCode: 0 });
@@ -136,7 +136,7 @@ describe('tools', () => {
       const result = await executeWriteFile('test-sid', '/file.txt', 'data');
 
       expect(mockExecSync).toHaveBeenCalledWith(
-        'docker exec -i harness-sbx-test-sid sh -c "cat > \"/file.txt\""',
+        'docker exec -i spoke-sbx-test-sid sh -c "cat > \"/file.txt\""',
         expect.objectContaining({ input: 'data' }),
       );
     });
@@ -160,7 +160,7 @@ describe('tools', () => {
       const result = await executeWriteFile('test-sid', 'file.txt', 'data');
 
       expect(mockExecSync).toHaveBeenCalledWith(
-        'docker exec -i harness-sbx-test-sid sh -c "cat > \"file.txt\""',
+        'docker exec -i spoke-sbx-test-sid sh -c "cat > \"file.txt\""',
         expect.objectContaining({ input: 'data' }),
       );
       expect(result).toEqual({ stdout: 'File written to file.txt', stderr: '', exitCode: 0 });
@@ -183,7 +183,7 @@ describe('tools', () => {
       const result = await executeGit('test-sid', ['status']);
 
       expect(mockExecSync).toHaveBeenCalledWith(
-        'docker exec harness-sbx-test-sid sh -c "git status"',
+        'docker exec spoke-sbx-test-sid sh -c "git status"',
         expect.any(Object),
       );
       expect(result).toEqual({ stdout: 'On branch main', stderr: '', exitCode: 0 });
@@ -195,7 +195,7 @@ describe('tools', () => {
       await executeGit('test-sid', ['commit', '-m', 'my message']);
 
       expect(mockExecSync).toHaveBeenCalledWith(
-        'docker exec harness-sbx-test-sid sh -c "git commit -m \\"my message\\""',
+        'docker exec spoke-sbx-test-sid sh -c "git commit -m \\"my message\\""',
         expect.any(Object),
       );
     });

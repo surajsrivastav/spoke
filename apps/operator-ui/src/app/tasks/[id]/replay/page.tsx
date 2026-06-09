@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import type { Task } from "@harness/shared";
+import type { Task } from "@spoke/shared";
 
 interface ReplayEvent {
   time: number;

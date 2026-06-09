@@ -1,7 +1,7 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import crypto from 'node:crypto'
 
-vi.mock('@harness/shared', () => ({
+vi.mock('@spoke/shared', () => ({
   env: { SLACK_SIGNING_SECRET: 'test_secret' },
 }))
 

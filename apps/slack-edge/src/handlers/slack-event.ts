@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
 import crypto from 'node:crypto'
-import { prisma } from '@harness/db'
+import { prisma } from '@spoke/db'
 import { WebClient } from '@slack/web-api'
-import { env } from '@harness/shared'
+import { env } from '@spoke/shared'
 
 const slackEvent = new Hono()
 const slackClient = new WebClient(env.SLACK_BOT_TOKEN)

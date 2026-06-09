@@ -1,4 +1,4 @@
-import { env } from '@harness/shared';
+import { env } from '@spoke/shared';
 import { createProvider } from './providers/index.js';
 import type { ToolUseBlock, TextBlock } from './providers/types.js';
 import { toolHandlers } from './tools.js';

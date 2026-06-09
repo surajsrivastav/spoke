@@ -11,8 +11,8 @@ const pipelineStages = [
 ];
 
 const features = [
-  { title: "Slack Integration", desc: "Mention @harness with a task goal to kick off autonomous work directly from Slack." },
-  { title: "WhatsApp Bridge", desc: "Send tasks via WhatsApp. The bridge forwards messages to the Harness agent." },
+  { title: "Slack Integration", desc: "Mention @spoke with a task goal to kick off autonomous work directly from Slack." },
+  { title: "WhatsApp Bridge", desc: "Send tasks via WhatsApp. The bridge forwards messages to the Spoke agent." },
   { title: "E2B Sandbox", desc: "Every task runs in an isolated E2B cloud sandbox with full filesystem access." },
   { title: "Temporal Orchestration", desc: "Reliable workflow execution with retries, signals, and observability." },
   { title: "GitHub PRs", desc: "Agents push changes and open pull requests automatically on completion." },
@@ -56,7 +56,7 @@ export default function DemoPage() {
       {/* Hero */}
       <div className="mb-16 text-center">
         <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-          Harness
+          Spoke
         </h1>
         <p className="mt-3 text-lg text-gray-500">
           Autonomous coding-agent control plane. Deploy from Slack, WhatsApp, or
@@ -100,7 +100,7 @@ export default function DemoPage() {
           <div className="text-center">
             <span className="ml-24 rounded bg-amber-50 px-2 py-0.5 text-amber-700">orchestrator</span>
             <span className="mx-2">→</span>
-            <span className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700">@harness/agent</span>
+            <span className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700">@spoke/agent</span>
             <span className="mx-2">→</span>
             <span className="rounded bg-red-50 px-2 py-0.5 text-red-700">E2B Sandbox</span>
           </div>
@@ -208,7 +208,7 @@ export default function DemoPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 pt-6 text-center text-xs text-gray-400">
-        Harness — Agentic control plane ·{" "}
+        Spoke — Agentic control plane ·{" "}
         <a href="/" className="underline hover:text-gray-600">Operator UI</a>
       </footer>
     </div>

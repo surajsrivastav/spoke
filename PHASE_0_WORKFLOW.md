@@ -1,6 +1,6 @@
 # Phase 0 Execution Workflow
 
-How to actually execute the 8-week Phase 0 plan using the Harness agentic development system.
+How to actually execute the 8-week Phase 0 plan using the Spoke agentic development system.
 
 ---
 
@@ -36,7 +36,7 @@ Working monorepo, Postgres running locally, schema deployed.
   ```
   Given an empty directory
   When I run bash bootstrap.sh
-  Then a harness/ monorepo exists with:
+  Then a spoke/ monorepo exists with:
     - 3 apps (slack-edge, orchestrator, operator-ui)
     - 4 packages (db, agent, provenance, shared)
     - Working pnpm install
@@ -76,7 +76,7 @@ Working monorepo, Postgres running locally, schema deployed.
 ## Week 2: Slack Edge + Task Creation
 
 ### Goal
-Slack `@harness` creates a task row.
+Slack `@spoke` creates a task row.
 
 ### Stories
 
@@ -87,7 +87,7 @@ Slack `@harness` creates a task row.
 - **AC**:
   ```
   Given a test Slack workspace
-  When I create a Slack app for Harness
+  When I create a Slack app for Spoke
   Then the app has:
     - Bot scope: app_mentions:read, chat:write
     - Event subscription for app_mention
@@ -130,7 +130,7 @@ Task goes from "pending" to "running" — worker picks it up.
 - **AC**:
   ```
   Given a fresh Temporal Cloud account
-  When I create a namespace "harness-dev"
+  When I create a namespace "spoke-dev"
   Then the namespace exists
   And API credentials are in Secret Manager
   And the worker can connect
@@ -378,7 +378,7 @@ Real PRs created. Operator can kill tasks.
 ## Week 8: Polish + Dogfooding
 
 ### Goal
-**5 PRs on Harness authored by Harness.**
+**5 PRs on Spoke authored by Spoke.**
 
 ### Stories
 
@@ -395,22 +395,22 @@ Real PRs created. Operator can kill tasks.
   And secrets are accessible via Workload Identity
   ```
 
-#### S-8.2: First Harness task (dogfooding)
+#### S-8.2: First Spoke task (dogfooding)
 - **Persona**: engineer
 - **Agent**: integrator
 - **Skills**: All Phase 0 skills
 - **AC**:
   ```
-  Given Harness deployed to production
-  When I send "@harness fix the logging in slack-edge"
-  Then Harness creates a PR
+  Given Spoke deployed to production
+  When I send "@spoke fix the logging in slack-edge"
+  Then Spoke creates a PR
   And the PR fixes the actual bug
   And tests pass
   And I merge it
   ```
 
 #### S-8.3-8.7: 4 more dogfooding tasks
-- Each story = one PR by Harness on Harness
+- Each story = one PR by Spoke on Spoke
 - Examples:
   - Add JSDoc to provenance writer
   - Refactor cost cap to use better types
@@ -499,7 +499,7 @@ Real PRs created. Operator can kill tasks.
 
 ### Bug found during dogfooding
 - Don't fix it manually
-- Use Harness to fix it (test the dogfooding loop)
+- Use Spoke to fix it (test the dogfooding loop)
 - If it can't fix it, file as a bug
 
 ### Architecture decision needed mid-week
@@ -514,7 +514,7 @@ Real PRs created. Operator can kill tasks.
 
 After 8 weeks, evaluate:
 - ✅ All 5 features working end-to-end?
-- ✅ 5+ PRs by Harness on Harness?
+- ✅ 5+ PRs by Spoke on Spoke?
 - ✅ Cost per task <$3?
 - ✅ Mean time to PR <5 min?
 - ✅ Kill switch <10s propagation?

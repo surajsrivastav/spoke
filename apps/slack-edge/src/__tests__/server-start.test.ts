@@ -13,14 +13,14 @@ vi.mock('../verify-slack-request.js', () => ({
   verifySlackRequest: async (_c: any, next: any) => { await next() },
 }))
 
-vi.mock('@harness/shared', () => ({
+vi.mock('@spoke/shared', () => ({
   env: {
     SLACK_BOT_TOKEN: 'test_bot_token',
     SLACK_SIGNING_SECRET: 'test_signing_secret',
   },
 }))
 
-vi.mock('@harness/db', () => ({
+vi.mock('@spoke/db', () => ({
   prisma: { task: { create: vi.fn() } },
 }))
 

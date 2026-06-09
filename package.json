@@ -1,5 +1,5 @@
 {
-  "name": "harness",
+  "name": "spoke",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -11,8 +11,8 @@
     "edge-cases": "tsx scripts/edge-case-finder.ts",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "migrate": "pnpm --filter @harness/db migrate",
-    "db:studio": "pnpm --filter @harness/db studio"
+    "migrate": "pnpm --filter @spoke/db migrate",
+    "db:studio": "pnpm --filter @spoke/db studio"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.100.1",

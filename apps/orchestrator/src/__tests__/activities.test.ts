@@ -6,7 +6,7 @@ const { mockTaskUpdate, mockTaskRunCreate, mockPullRequestCreate } = vi.hoisted(
   mockPullRequestCreate: vi.fn(),
 }));
 
-vi.mock('@harness/db', () => ({
+vi.mock('@spoke/db', () => ({
   prisma: {
     task: { update: mockTaskUpdate },
     taskRun: { create: mockTaskRunCreate },
@@ -30,7 +30,7 @@ const {
   mockCreatePr: vi.fn(),
 }));
 
-vi.mock('@harness/agent', () => ({
+vi.mock('@spoke/agent', () => ({
   provisionSandbox: mockProvisionSandbox,
   destroySandbox: mockDestroySandbox,
   runAgentLoop: mockRunAgentLoop,
@@ -43,7 +43,7 @@ const { mockWriteProvenance } = vi.hoisted(() => ({
   mockWriteProvenance: vi.fn(),
 }));
 
-vi.mock('@harness/provenance', () => ({
+vi.mock('@spoke/provenance', () => ({
   writeProvenance: mockWriteProvenance,
 }));
 

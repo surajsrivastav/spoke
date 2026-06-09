@@ -43,16 +43,16 @@ terraform validate
 
 ```bash
 # 1. Start Postgres
-docker run -d --name harness-pg -e POSTGRES_USER=harness -e POSTGRES_PASSWORD=harness_dev -e POSTGRES_DB=harness_dev -p 5432:5432 postgres:16-alpine
+docker run -d --name spoke-pg -e POSTGRES_USER=spoke -e POSTGRES_PASSWORD=spoke_dev -e POSTGRES_DB=spoke_dev -p 5432:5432 postgres:16-alpine
 
 # 2. Generate Prisma client
-pnpm --filter @harness/db generate
+pnpm --filter @spoke/db generate
 
 # 3. Run migration
-DATABASE_URL=postgresql://harness:harness_dev@localhost:5432/harness_dev pnpm migrate
+DATABASE_URL=postgresql://spoke:spoke_dev@localhost:5432/spoke_dev pnpm migrate
 
 # 4. Verify tables
-docker exec harness-pg psql -U harness -d harness_dev -c "\dt"
+docker exec spoke-pg psql -U spoke -d spoke_dev -c "\dt"
 ```
 
 **Expected:** 5 tables: `tasks`, `task_runs`, `provenance`, `traces`, `pull_requests`. All FKs and indexes created.
@@ -71,7 +71,7 @@ cat slack-manifest.yml
 cat apps/slack-edge/package.json
 ```
 
-**Expected:** Manifest has bot scopes `app_mentions:read`, `chat:write`, event subscription for `app_mention`. Package depends on `@harness/db`, `@harness/shared`, `@slack/web-api`.
+**Expected:** Manifest has bot scopes `app_mentions:read`, `chat:write`, event subscription for `app_mention`. Package depends on `@spoke/db`, `@spoke/shared`, `@slack/web-api`.
 
 ### S-2.2: Slack signature verification
 
@@ -111,7 +111,7 @@ curl -s -X POST http://localhost:3001/slack/events \
 
 ### S-3.1: Temporal Cloud namespace (admin task)
 
-**Manual step:** Create Temporal Cloud namespace `harness-dev` or run Temporal dev server locally:
+**Manual step:** Create Temporal Cloud namespace `spoke-dev` or run Temporal dev server locally:
 ```bash
 # Using Temporal CLI
 temporal server start-dev
@@ -133,7 +133,7 @@ cat apps/orchestrator/src/workflows/agent-task.ts
 cat apps/orchestrator/src/activities/index.ts
 ```
 
-**Expected:** 7 activities defined, each with proper imports from `@harness/agent`, `@harness/db`, `@harness/provenance`, `@harness/shared`.
+**Expected:** 7 activities defined, each with proper imports from `@spoke/agent`, `@spoke/db`, `@spoke/provenance`, `@spoke/shared`.
 
 ### S-3.4: Slack → Temporal trigger
 
@@ -145,7 +145,7 @@ cat apps/orchestrator/src/index.ts
 pnpm typecheck
 ```
 
-**Expected:** Worker connects to `localhost:7233`, registers workflows and activities on `harness-task-queue`.
+**Expected:** Worker connects to `localhost:7233`, registers workflows and activities on `spoke-task-queue`.
 
 ---
 
@@ -261,7 +261,7 @@ open http://localhost:3000/tasks/<task-id>
 cat packages/agent/src/github.ts | head -30
 ```
 
-**Expected:** `pushBranch(sandboxId, repoUrl, goal)` configures git, creates branch `harness/<taskId>-<slug>`, commits, pushes using GH_TOKEN.
+**Expected:** `pushBranch(sandboxId, repoUrl, goal)` configures git, creates branch `spoke/<taskId>-<slug>`, commits, pushes using GH_TOKEN.
 
 ### S-7.2: Create PR
 
@@ -295,7 +295,7 @@ open http://localhost:3000/tasks/<task-id>
 ls apps/*/Dockerfile
 
 # 2. Build an image
-docker build -f apps/slack-edge/Dockerfile -t harness-slack-edge .
+docker build -f apps/slack-edge/Dockerfile -t spoke-slack-edge .
 
 # 3. Deploy via Terraform
 cd infra/terraform
@@ -307,18 +307,18 @@ terraform apply -var="project_id=your-gcp-project"
 ### S-8.2-8.7: Dogfooding
 
 **Manual process:**
-1. Deploy Harness to GCP
-2. Send `@harness <task>` from Slack
-3. Wait for Harness to create a PR
+1. Deploy Spoke to GCP
+2. Send `@spoke <task>` from Slack
+3. Wait for Spoke to create a PR
 4. Review and merge the PR
-5. Repeat for 5 total PRs by Harness on Harness
+5. Repeat for 5 total PRs by Spoke on Spoke
 
 ---
 
 ## Final Retrospective Checklist
 
 - [ ] All 5 features working end-to-end (Slack → Task → Workflow → Agent → Verification → PR)
-- [ ] 5+ PRs by Harness on Harness
+- [ ] 5+ PRs by Spoke on Spoke
 - [ ] Cost per task < $3
 - [ ] Mean time to PR < 5 min
 - [ ] Kill switch < 10s propagation

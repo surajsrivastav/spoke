@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { Task, Provenance } from "@harness/shared";
+import type { Task, Provenance } from "@spoke/shared";
 import { StatusBadge } from "./lib/StatusBadge";
 import { Button } from "./lib/Button";
 import { EVENT_TYPE_CONFIG } from "../lib/constants";

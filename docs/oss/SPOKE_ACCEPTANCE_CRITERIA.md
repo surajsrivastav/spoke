@@ -1,4 +1,4 @@
-# HARNESS — Acceptance Criteria
+# SPOKE — Acceptance Criteria
 
 Happy Path · Sad Path · Edge Cases
 
@@ -21,69 +21,69 @@ Happy Path · Sad Path · Edge Cases
 
 ## F-01: Slack Entry Point
 
-An engineer sends `@harness <goal>` in a Slack channel. Harness verifies the message, creates a task, and acknowledges within 2 seconds.
+An engineer sends `@spoke <goal>` in a Slack channel. Spoke verifies the message, creates a task, and acknowledges within 2 seconds.
 
 ### ✅ HAPPY PATH — Engineer submits a valid goal via Slack
 
-**Given** the Harness bot is installed in the #engineering Slack channel
+**Given** the Spoke bot is installed in the #engineering Slack channel
 And the Slack signing secret is valid and configured
 And the repository github.com/org/api is accessible via GH_TOKEN
-**When** an engineer sends "@harness add JWT authentication to the Express API"
-**Then** Harness verifies the Slack signature within 500ms
+**When** an engineer sends "@spoke add JWT authentication to the Express API"
+**Then** Spoke verifies the Slack signature within 500ms
 And a task record is created in the database with status = pending
 And the task goal is stored as "add JWT authentication to the Express API"
 And a Temporal workflow is started with the task ID
-And Harness replies in Slack within 2 seconds: "✅ Task task_01ABC created. Running now."
+And Spoke replies in Slack within 2 seconds: "✅ Task task_01ABC created. Running now."
 And the reply contains a link to the task in the Operator UI
 
 ### ❌ SAD PATH — Message has invalid Slack signature
 
-**Given** the Harness bot receives a POST to /slack/events
+**Given** the Spoke bot receives a POST to /slack/events
 **When** the X-Slack-Signature header does not match the computed HMAC
-**Then** Harness returns HTTP 401 with body `{ ok: false, error: "Invalid signature" }`
+**Then** Spoke returns HTTP 401 with body `{ ok: false, error: "Invalid signature" }`
 And no task is created in the database
 And no Temporal workflow is started
 But no error is sent to the Slack channel
 
 ### ❌ SAD PATH — Goal text is empty
 
-**Given** the engineer sends "@harness" with no goal text
-**When** Harness parses the message body
-**Then** Harness replies: "❌ Please provide a goal. Example: @harness add JWT auth"
+**Given** the engineer sends "@spoke" with no goal text
+**When** Spoke parses the message body
+**Then** Spoke replies: "❌ Please provide a goal. Example: @spoke add JWT auth"
 And no task is created
 And status code 200 is returned to Slack (to avoid Slack retry storms)
 
 ### ❌ SAD PATH — Bot is not a member of the channel
 
-**Given** an engineer sends "@harness add tests" in a channel the bot has not joined
-**When** Slack delivers the event to the Harness webhook
-**Then** Harness logs a warning: "bot_not_in_channel: C123"
+**Given** an engineer sends "@spoke add tests" in a channel the bot has not joined
+**When** Slack delivers the event to the Spoke webhook
+**Then** Spoke logs a warning: "bot_not_in_channel: C123"
 And no task is created
 And no reply is sent (bot cannot post to the channel)
 
 ### ⚠️ EDGE CASE — Goal contains special characters and emojis
 
-**Given** the engineer sends "@harness fix the 🐛 in the auth/login route — it's returning 500"
-**When** Harness parses the message
+**Given** the engineer sends "@spoke fix the 🐛 in the auth/login route — it's returning 500"
+**When** Spoke parses the message
 **Then** the goal is stored exactly as "fix the 🐛 in the auth/login route — it's returning 500"
 And the task is created and acknowledged normally
 And the agent receives the full goal including emoji and punctuation
 
 ### ⚠️ EDGE CASE — Same user submits two identical goals within 5 seconds
 
-**Given** an engineer sends "@harness add tests" twice within 5 seconds (double-tap)
-**When** both Slack events arrive at the Harness webhook
+**Given** an engineer sends "@spoke add tests" twice within 5 seconds (double-tap)
+**When** both Slack events arrive at the Spoke webhook
 **Then** the first event creates task_01 normally
 And the second event is deduplicated by Slack event ID
 And only one task is created in the database
-And Harness replies once, not twice
+And Spoke replies once, not twice
 
 ### ⚠️ EDGE CASE — Goal is submitted in a Slack thread, not a channel message
 
-**Given** an engineer replies "@harness add auth" inside a thread on an existing message
-**When** Harness receives the event
+**Given** an engineer replies "@spoke add auth" inside a thread on an existing message
+**When** Spoke receives the event
 **Then** the task is created normally (thread_ts is stored as context)
-And Harness replies inside the same thread
+And Spoke replies inside the same thread
 And the operator UI shows the Slack thread link in the task metadata
 
 ---
@@ -111,7 +111,7 @@ And total cost is under $3.00
 ### ❌ SAD PATH — E2B sandbox fails to provision within 30 seconds
 
 **Given** the E2B API is experiencing degraded performance
-**When** Harness calls Sandbox.create() and receives a timeout after 30 seconds
+**When** Spoke calls Sandbox.create() and receives a timeout after 30 seconds
 **Then** the activity throws SandboxProvisionError
 And Temporal retries the provisionSandbox activity up to 3 times with exponential backoff
 And after 3 failures the workflow transitions to status = failed
@@ -175,7 +175,7 @@ And if the retry fails 3 times the task is marked failed with reason = "filesyst
 
 ## F-03: Verification Gates
 
-Before any PR is opened, Harness runs lint, TypeScript typecheck, and the test suite inside the sandbox. All gates must pass.
+Before any PR is opened, Spoke runs lint, TypeScript typecheck, and the test suite inside the sandbox. All gates must pass.
 
 ### ✅ HAPPY PATH — All verification gates pass and PR is opened
 
@@ -214,7 +214,7 @@ And if 3 retry cycles all fail the task is marked failed with the test output at
 **Given** the repository has no test files and no test script in package.json
 **When** the verify activity runs pnpm test
 **Then** npm reports "Missing script: test" and exits with code 1
-And Harness treats "no test script" as a special case, not a failure
+And Spoke treats "no test script" as a special case, not a failure
 And the verification log notes: "No test suite found — skipping test gate"
 And lint and typecheck still run and must pass
 And the PR is opened with a comment: "⚠️ No test suite found — tests skipped"
@@ -223,7 +223,7 @@ And the PR is opened with a comment: "⚠️ No test suite found — tests skipp
 
 **Given** the repository has a known flaky test that fails ~20% of the time
 **When** pnpm test fails on first run due to a race condition in the flaky test
-**Then** Harness automatically retries the test run once
+**Then** Spoke automatically retries the test run once
 And if the retry passes the task continues to PR creation
 And the provenance log records: "Test flake detected — passed on retry 2"
 And the operator can see both runs in the trace view
@@ -267,7 +267,7 @@ And a provenance_gap flag is recorded so operators know the trace may be incompl
 ### ⚠️ EDGE CASE — Operator tries to delete a provenance record
 
 **Given** an operator calls DELETE /api/provenance/event_01ABC via the API
-**When** Harness processes the request
+**When** Spoke processes the request
 **Then** the API returns HTTP 405 Method Not Allowed
 And the database row is not deleted
 And the audit log records the attempted deletion and who attempted it
@@ -341,7 +341,7 @@ And total cost is $0.00 (no model calls were made)
 
 ---
 
-## F-06: SSO Login (Harness Cloud — Enterprise)
+## F-06: SSO Login (Spoke Cloud — Enterprise)
 
 Enterprise operators sign in via their company identity provider (Google Workspace, Okta, Azure AD). No local passwords.
 
@@ -349,12 +349,12 @@ Enterprise operators sign in via their company identity provider (Google Workspa
 
 **Given** the organisation has configured Google Workspace as the SSO provider
 And the operator's email operator@ford.com belongs to the ford.com Google Workspace
-**When** the operator clicks "Sign in with SSO" on the Harness Cloud login page
+**When** the operator clicks "Sign in with SSO" on the Spoke Cloud login page
 **Then** the browser redirects to Google's OAuth2 authorisation endpoint
 And the operator signs in with their Google account
-And Google redirects back to Harness with an authorisation code
-And Harness exchanges the code for an ID token and verifies the signature
-And the operator's email domain (ford.com) is matched to the Ford organisation in Harness
+And Google redirects back to Spoke with an authorisation code
+And Spoke exchanges the code for an ID token and verifies the signature
+And the operator's email domain (ford.com) is matched to the Ford organisation in Spoke
 And a session is created with the operator's role (as configured in RBAC)
 And the operator is redirected to the fleet dashboard within 3 seconds
 
@@ -363,18 +363,18 @@ And the operator is redirected to the fleet dashboard within 3 seconds
 **Given** Okta is experiencing a service outage
 **When** the operator clicks "Sign in with SSO" and is redirected to Okta
 **Then** Okta returns an error page or timeout
-And Harness detects the OAuth callback contains an error parameter
-And Harness redirects to the login page with message: "Your identity provider is currently unavailable. Please try again later."
+And Spoke detects the OAuth callback contains an error parameter
+And Spoke redirects to the login page with message: "Your identity provider is currently unavailable. Please try again later."
 And no session is created
-And Harness logs the failed login attempt with provider=okta and error=provider_unavailable
+And Spoke logs the failed login attempt with provider=okta and error=provider_unavailable
 
 ### ❌ SAD PATH — User is not in the authorised organisation
 
 **Given** the operator's Google account personal@gmail.com is not a ford.com Workspace account
 **When** the operator signs in with personal@gmail.com via Google SSO
 **Then** Google successfully authenticates the user
-And Harness checks the email domain: gmail.com does not match any configured organisation
-And Harness returns: "Your account (personal@gmail.com) is not authorised for this organisation"
+And Spoke checks the email domain: gmail.com does not match any configured organisation
+And Spoke returns: "Your account (personal@gmail.com) is not authorised for this organisation"
 And no session is created
 And the failed login is logged for the security audit trail
 
@@ -389,18 +389,18 @@ And after re-authentication the operator is returned to the same page they were 
 ### ⚠️ EDGE CASE — Operator switches from one SSO provider to another (Okta → Google)
 
 **Given** the organisation changes their SSO provider from Okta to Google Workspace
-And the admin updates the SSO configuration in Harness settings
+And the admin updates the SSO configuration in Spoke settings
 **When** an existing operator who previously logged in via Okta now logs in via Google
-**Then** Harness matches the operator by email address (the email is the same)
+**Then** Spoke matches the operator by email address (the email is the same)
 And the operator's account, role, and history are preserved
 And no duplicate account is created
 And the login method shown in audit logs changes from okta to google
 
 ### ⚠️ EDGE CASE — JIT provisioning — first-ever login for a new team member
 
-**Given** a new engineer alice@ford.com has never logged into Harness before
+**Given** a new engineer alice@ford.com has never logged into Spoke before
 **When** Alice signs in via the Ford Okta SSO for the first time
-**Then** Harness creates a new user account for alice@ford.com automatically (JIT provisioning)
+**Then** Spoke creates a new user account for alice@ford.com automatically (JIT provisioning)
 And Alice is assigned the default role: operator (as configured by the admin)
 And Alice is added to the Ford organisation
 And Alice is redirected to the fleet dashboard with a welcome message
@@ -438,10 +438,10 @@ And Slack notifies the engineer: "Task stopped — cost cap reached. Consider in
 ### ❌ SAD PATH — Team monthly budget is exhausted
 
 **Given** the Platform team has a $200/month budget and has already spent $197
-**When** an engineer submits a new task "@harness refactor the entire auth module"
-**Then** Harness checks the team budget before starting the workflow
+**When** an engineer submits a new task "@spoke refactor the entire auth module"
+**Then** Spoke checks the team budget before starting the workflow
 And $200 - $197 = $3 remaining, which is below the default task cap of $5
-And Harness rejects the task with: "Team budget nearly exhausted ($3 remaining). Reduce the task cap or request a budget increase."
+And Spoke rejects the task with: "Team budget nearly exhausted ($3 remaining). Reduce the task cap or request a budget increase."
 And no task is created in the database
 And no sandbox is provisioned
 And the operator (not the engineer) is notified via email

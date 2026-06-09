@@ -92,12 +92,12 @@ describe('incomingMessage handler', () => {
     );
   });
 
-  it('POST with @harness command calls fetch and logs task creation with correct goal', async () => {
+  it('POST with @spoke command calls fetch and logs task creation with correct goal', async () => {
     const { app } = await import('../index.js');
     vi.mocked(globalThis.fetch).mockClear();
     consoleSpy.mockClear();
     const body = deepCopy(baseBody);
-    body.entry[0].changes[0].value.messages[0].text.body = '@harness create a task';
+    body.entry[0].changes[0].value.messages[0].text.body = '@spoke create a task';
 
     const res = await app.request('/webhook/whatsapp', {
       method: 'POST',
@@ -115,12 +115,12 @@ describe('incomingMessage handler', () => {
     );
   });
 
-  it('POST with /harness command returns 200 and logs task creation', async () => {
+  it('POST with /spoke command returns 200 and logs task creation', async () => {
     const { app } = await import('../index.js');
     vi.mocked(globalThis.fetch).mockClear();
     consoleSpy.mockClear();
     const body = deepCopy(baseBody);
-    body.entry[0].changes[0].value.messages[0].text.body = '/harness create a task';
+    body.entry[0].changes[0].value.messages[0].text.body = '/spoke create a task';
 
     const res = await app.request('/webhook/whatsapp', {
       method: 'POST',
@@ -382,12 +382,12 @@ describe('incomingMessage handler', () => {
     expect(fetchBody.text.body).not.toContain('  ');
   });
 
-  it('POST with harness command extracts goal correctly with trimming', async () => {
+  it('POST with spoke command extracts goal correctly with trimming', async () => {
     const { app } = await import('../index.js');
     vi.mocked(globalThis.fetch).mockClear();
     consoleSpy.mockClear();
     const body = deepCopy(baseBody);
-    body.entry[0].changes[0].value.messages[0].text.body = '  @harness   my goal here  ';
+    body.entry[0].changes[0].value.messages[0].text.body = '  @spoke   my goal here  ';
 
     const res = await app.request('/webhook/whatsapp', {
       method: 'POST',
@@ -438,12 +438,12 @@ describe('incomingMessage handler', () => {
     expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(1);
   });
 
-  it('POST with @HARNESS uppercase does not create task (startsWith is case-sensitive)', async () => {
+  it('POST with @SPOKE uppercase does not create task (startsWith is case-sensitive)', async () => {
     const { app } = await import('../index.js');
     vi.mocked(globalThis.fetch).mockClear();
     consoleSpy.mockClear();
     const body = deepCopy(baseBody);
-    body.entry[0].changes[0].value.messages[0].text.body = '@HARNESS do something';
+    body.entry[0].changes[0].value.messages[0].text.body = '@SPOKE do something';
 
     const res = await app.request('/webhook/whatsapp', {
       method: 'POST',
@@ -458,12 +458,12 @@ describe('incomingMessage handler', () => {
     );
   });
 
-  it('POST with @harness followed by extra whitespace still extracts goal correctly', async () => {
+  it('POST with @spoke followed by extra whitespace still extracts goal correctly', async () => {
     const { app } = await import('../index.js');
     vi.mocked(globalThis.fetch).mockClear();
     consoleSpy.mockClear();
     const body = deepCopy(baseBody);
-    body.entry[0].changes[0].value.messages[0].text.body = '@harness     implement feature x';
+    body.entry[0].changes[0].value.messages[0].text.body = '@spoke     implement feature x';
 
     const res = await app.request('/webhook/whatsapp', {
       method: 'POST',
@@ -477,12 +477,12 @@ describe('incomingMessage handler', () => {
     );
   });
 
-  it('POST with /harness followed by multiple spaces extracts goal correctly', async () => {
+  it('POST with /spoke followed by multiple spaces extracts goal correctly', async () => {
     const { app } = await import('../index.js');
     vi.mocked(globalThis.fetch).mockClear();
     consoleSpy.mockClear();
     const body = deepCopy(baseBody);
-    body.entry[0].changes[0].value.messages[0].text.body = '/harness     implement feature x';
+    body.entry[0].changes[0].value.messages[0].text.body = '/spoke     implement feature x';
 
     const res = await app.request('/webhook/whatsapp', {
       method: 'POST',
@@ -496,12 +496,12 @@ describe('incomingMessage handler', () => {
     );
   });
 
-  it('POST with @harness and no space after still extracts goal correctly', async () => {
+  it('POST with @spoke and no space after still extracts goal correctly', async () => {
     const { app } = await import('../index.js');
     vi.mocked(globalThis.fetch).mockClear();
     consoleSpy.mockClear();
     const body = deepCopy(baseBody);
-    body.entry[0].changes[0].value.messages[0].text.body = '@harnessgoal';
+    body.entry[0].changes[0].value.messages[0].text.body = '@spokegoal';
 
     const res = await app.request('/webhook/whatsapp', {
       method: 'POST',

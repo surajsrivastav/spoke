@@ -16,7 +16,7 @@ const {
   mockCreatePr: vi.fn(),
 }));
 
-vi.mock('@harness/agent', () => ({
+vi.mock('@spoke/agent', () => ({
   provisionSandbox: mockProvisionSandbox,
   destroySandbox: mockDestroySandbox,
   runAgentLoop: mockRunAgentLoop,
@@ -26,7 +26,7 @@ vi.mock('@harness/agent', () => ({
 }));
 
 const { mockWriteProvenance } = vi.hoisted(() => ({ mockWriteProvenance: vi.fn() }));
-vi.mock('@harness/provenance', () => ({ writeProvenance: mockWriteProvenance }));
+vi.mock('@spoke/provenance', () => ({ writeProvenance: mockWriteProvenance }));
 
 const { mockTaskUpdate, mockTaskRunCreate, mockPullRequestCreate } = vi.hoisted(() => ({
   mockTaskUpdate: vi.fn(),
@@ -34,7 +34,7 @@ const { mockTaskUpdate, mockTaskRunCreate, mockPullRequestCreate } = vi.hoisted(
   mockPullRequestCreate: vi.fn(),
 }));
 
-vi.mock('@harness/db', () => ({
+vi.mock('@spoke/db', () => ({
   prisma: {
     task: { update: mockTaskUpdate, findUnique: vi.fn() },
     taskRun: { create: mockTaskRunCreate, groupBy: vi.fn() },

@@ -6,9 +6,9 @@ COPY apps/slack-edge/package.json apps/slack-edge/
 COPY packages/ packages/
 RUN pnpm install --no-frozen-lockfile --ignore-scripts
 RUN pnpm rebuild
-RUN pnpm --filter @harness/db generate
+RUN pnpm --filter @spoke/db generate
 COPY apps/slack-edge/ apps/slack-edge/
-RUN pnpm --filter @harness/slack-edge build
+RUN pnpm --filter @spoke/slack-edge build
 
 FROM node:20-bullseye-slim
 WORKDIR /app

@@ -1,5 +1,5 @@
 {
-  "name": "@harness/orchestrator",
+  "name": "@spoke/orchestrator",
   "version": "0.0.1",
   "type": "module",
   "scripts": {
@@ -12,10 +12,10 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@harness/agent": "workspace:*",
-    "@harness/db": "workspace:*",
-    "@harness/provenance": "workspace:*",
-    "@harness/shared": "workspace:*",
+    "@spoke/agent": "workspace:*",
+    "@spoke/db": "workspace:*",
+    "@spoke/provenance": "workspace:*",
+    "@spoke/shared": "workspace:*",
     "@temporalio/client": "^1.10.0",
     "@temporalio/worker": "^1.10.0",
     "@temporalio/workflow": "^1.10.0"

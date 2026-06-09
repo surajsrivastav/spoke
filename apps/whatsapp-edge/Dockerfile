@@ -6,9 +6,9 @@ COPY apps/whatsapp-edge/package.json apps/whatsapp-edge/
 COPY packages/ packages/
 RUN pnpm install --no-frozen-lockfile --ignore-scripts
 RUN pnpm rebuild
-RUN pnpm --filter @harness/db generate
+RUN pnpm --filter @spoke/db generate
 COPY apps/whatsapp-edge/ apps/whatsapp-edge/
-RUN pnpm --filter @harness/whatsapp-edge build
+RUN pnpm --filter @spoke/whatsapp-edge build
 
 FROM node:20-bullseye-slim
 WORKDIR /app

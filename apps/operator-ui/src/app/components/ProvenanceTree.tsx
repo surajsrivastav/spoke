@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Provenance } from "@harness/shared";
+import type { Provenance } from "@spoke/shared";
 
 export default function ProvenanceTree({
   provenances,

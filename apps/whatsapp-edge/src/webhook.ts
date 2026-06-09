@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 
-const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? 'harness_verify_token'
+const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? 'spoke_verify_token'
 
 export const webhook = new Hono()
 

@@ -1,4 +1,4 @@
-import type { Task, TaskStatus } from "@harness/shared";
+import type { Task, TaskStatus } from "@spoke/shared";
 
 const statusColors: Record<TaskStatus, string> = {
   pending: "bg-gray-200 text-gray-800",

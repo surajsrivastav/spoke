@@ -44,10 +44,10 @@ importers:
 
   apps/operator-ui:
     dependencies:
-      '@harness/db':
+      '@spoke/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@harness/shared':
+      '@spoke/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       next:
@@ -84,16 +84,16 @@ importers:
 
   apps/orchestrator:
     dependencies:
-      '@harness/agent':
+      '@spoke/agent':
         specifier: workspace:*
         version: link:../../packages/agent
-      '@harness/db':
+      '@spoke/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@harness/provenance':
+      '@spoke/provenance':
         specifier: workspace:*
         version: link:../../packages/provenance
-      '@harness/shared':
+      '@spoke/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@temporalio/client':
@@ -118,18 +118,18 @@ importers:
 
   apps/slack-edge:
     dependencies:
-      '@harness/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@harness/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@hono/node-server':
         specifier: ^1.12.0
         version: 1.19.14(hono@4.12.23)
       '@slack/web-api':
         specifier: ^7.0.0
         version: 7.16.0
+      '@spoke/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@spoke/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       hono:
         specifier: ^4.0.0
         version: 4.12.23
@@ -168,7 +168,7 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.100.1
         version: 0.100.1(zod@4.4.3)
-      '@harness/shared':
+      '@spoke/shared':
         specifier: workspace:*
         version: link:../shared
       openai:
@@ -197,7 +197,7 @@ importers:
 
   packages/provenance:
     dependencies:
-      '@harness/db':
+      '@spoke/db':
         specifier: workspace:*
         version: link:../db
     devDependencies:

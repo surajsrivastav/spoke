@@ -1,5 +1,5 @@
-resource "google_sql_database_instance" "harness" {
-  name             = "harness-dev-${random_id.suffix.hex}"
+resource "google_sql_database_instance" "spoke" {
+  name             = "spoke-dev-${random_id.suffix.hex}"
   database_version = "POSTGRES_16"
   region           = var.region
 
@@ -29,9 +29,9 @@ resource "google_sql_database_instance" "harness" {
   deletion_protection = false
 }
 
-resource "google_sql_database" "harness_dev" {
-  name     = "harness_dev"
-  instance = google_sql_database_instance.harness.name
+resource "google_sql_database" "spoke_dev" {
+  name     = "spoke_dev"
+  instance = google_sql_database_instance.spoke.name
 }
 
 resource "random_password" "db_password" {
@@ -39,27 +39,27 @@ resource "random_password" "db_password" {
   special = false
 }
 
-resource "google_sql_user" "harness" {
-  name     = "harness"
-  instance = google_sql_database_instance.harness.name
+resource "google_sql_user" "spoke" {
+  name     = "spoke"
+  instance = google_sql_database_instance.spoke.name
   password = var.db_password != "" ? var.db_password : random_password.db_password.result
 }
 
-resource "google_compute_network" "harness_vpc" {
-  name                    = "harness-dev-vpc"
+resource "google_compute_network" "spoke_vpc" {
+  name                    = "spoke-dev-vpc"
   auto_create_subnetworks = true
 }
 
 resource "google_compute_global_address" "private_ip_block" {
-  name          = "harness-dev-private-ip-block"
+  name          = "spoke-dev-private-ip-block"
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 16
-  network       = google_compute_network.harness_vpc.id
+  network       = google_compute_network.spoke_vpc.id
 }
 
 resource "google_service_networking_connection" "private_vpc_connection" {
-  network                 = google_compute_network.harness_vpc.id
+  network                 = google_compute_network.spoke_vpc.id
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.private_ip_block.name]
 }
