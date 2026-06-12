@@ -1,11 +1,11 @@
-# Harness Development Agents
+# Spoke Development Agents
 
-This document defines the agentic development system for building Harness. Agents are specialized roles that handle specific parts of development; skills are reusable capabilities.
+This document defines the agentic development system for building Spoke. Agents are specialized roles that handle specific parts of development; skills are reusable capabilities.
 
 **Where to put these files:**
 ```
-harness/
-├── .harness/
+spoke/
+├── .spoke/
 │   ├── AGENTS.md              # This file (master registry)
 │   ├── SKILLS.md              # Skills index
 │   ├── agents/                # Individual agent definitions

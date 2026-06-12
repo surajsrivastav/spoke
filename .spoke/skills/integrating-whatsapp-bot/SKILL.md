@@ -4,7 +4,7 @@ description: WhatsApp Cloud API webhook + message handling with Hono
 ---
 
 ## Overview
-Connects Harness to WhatsApp via Meta's WhatsApp Cloud API. Receives incoming messages via webhook, sends replies, and creates tasks from `@harness` mentions.
+Connects Spoke to WhatsApp via Meta's WhatsApp Cloud API. Receives incoming messages via webhook, sends replies, and creates tasks from `@spoke` mentions.
 
 ## When to Use
 - Setting up `apps/whatsapp-edge/`
@@ -19,7 +19,7 @@ Connects Harness to WhatsApp via Meta's WhatsApp Cloud API. Receives incoming me
 WhatsApp Cloud API requires a GET endpoint with `hub.mode`, `hub.verify_token`, `hub.challenge` query params. Return the challenge as plain text.
 
 ### 2. Incoming Message Handling
-WhatsApp sends POST requests with a `messages` array. Each message has a `from` (sender WA ID), `type`, and `text.body`. Check for `@harness` prefix to create tasks.
+WhatsApp sends POST requests with a `messages` array. Each message has a `from` (sender WA ID), `type`, and `text.body`. Check for `@spoke` prefix to create tasks.
 
 ### 3. Sending Messages
 POST to `https://graph.facebook.com/v20.0/{phone-number-id}/messages` with Bearer token auth.

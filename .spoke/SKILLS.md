@@ -1,6 +1,6 @@
-# Harness Development Skills
+# Spoke Development Skills
 
-Skills are **reusable capabilities** that any agent can invoke. Each skill is a directory under `.harness/skills/<skill-name>/` containing at minimum a `SKILL.md` file.
+Skills are **reusable capabilities** that any agent can invoke. Each skill is a directory under `.spoke/skills/<skill-name>/` containing at minimum a `SKILL.md` file.
 
 **Skill file format:**
 ```markdown
@@ -170,7 +170,7 @@ Skills used:
 
 When you find yourself doing the same thing twice:
 
-1. Create `.harness/skills/<skill-name>/SKILL.md`
+1. Create `.spoke/skills/<skill-name>/SKILL.md`
 2. Use the template (see top of this document)
 3. Add to the agent(s) that should use it
 4. Update this index

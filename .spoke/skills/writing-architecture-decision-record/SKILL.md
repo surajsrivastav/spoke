@@ -1,6 +1,6 @@
 ---
 name: writing-architecture-decision-record
-description: How to write Architectural Decision Records (ADRs) for Harness. Use when making a significant design decision (choosing a tech, designing a component, picking between architectures). Covers ADR template, when to write one, how to document tradeoffs.
+description: How to write Architectural Decision Records (ADRs) for Spoke. Use when making a significant design decision (choosing a tech, designing a component, picking between architectures). Covers ADR template, when to write one, how to document tradeoffs.
 ---
 
 # Writing Architectural Decision Records (ADRs)
@@ -112,7 +112,7 @@ Each alternative should have:
 
 ## Context
 
-For Harness Phase 0, we need to pick a cloud provider for the control plane (Cloud Run/Lambda equivalent, database, secrets, observability). The choice affects:
+For Spoke Phase 0, we need to pick a cloud provider for the control plane (Cloud Run/Lambda equivalent, database, secrets, observability). The choice affects:
 - Time to MVP (simpler is faster)
 - Monthly cost
 - Operational complexity
@@ -231,7 +231,7 @@ The decision in this ADR remains correct for Phase 0.
 - ✅ Stakeholder review before "Accepted"
 - ✅ Linked to related ADRs
 
-## ADRs for Harness Phase 0
+## ADRs for Spoke Phase 0
 
 Plan these ADRs early:
 
