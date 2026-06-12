@@ -15,10 +15,17 @@ import { writeProvenance } from '@spoke/provenance';
 
 export async function updateTaskStatus(taskId: string, status: TaskStatus): Promise<{ ok: true }> {
   console.log(`[activity] updateTaskStatus: taskId=${taskId}, status=${status}`);
-  await prisma.task.update({
-    where: { id: taskId },
-    data: { status },
-  });
+  if (status === 'succeeded') {
+    await prisma.task.updateMany({
+      where: { id: taskId, status: { not: 'killed' } },
+      data: { status },
+    });
+  } else {
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { status },
+    });
+  }
   return { ok: true };
 }
 

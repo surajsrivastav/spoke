@@ -58,6 +58,57 @@ const toolDefinitions = [
   },
 ];
 
+function extractJsonToolCalls(text: string): ToolUseBlock[] {
+  const results: ToolUseBlock[] = [];
+  const knownTools = new Set(toolDefinitions.map(t => t.name));
+  let callIdCounter = 0;
+
+  let pos = 0;
+  while (pos < text.length) {
+    const startIdx = text.indexOf('{"name"', pos);
+    if (startIdx === -1) break;
+
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    let endIdx = -1;
+
+    for (let i = startIdx; i < text.length; i++) {
+      const ch = text[i];
+      if (escape) { escape = false; continue; }
+      if (ch === '\\') { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') depth++;
+      if (ch === '}') { depth--; if (depth === 0) { endIdx = i + 1; break; } }
+    }
+
+    if (endIdx === -1) break;
+
+    const snippet = text.slice(startIdx, endIdx);
+    pos = endIdx;
+
+    try {
+      const parsed = JSON.parse(snippet);
+      const name = parsed.name || parsed.function?.name;
+      const rawInput = parsed.input || parsed.arguments || parsed.function?.arguments || {};
+      const input = typeof rawInput === 'string' ? JSON.parse(rawInput) : rawInput;
+      if (name && knownTools.has(name) && typeof input === 'object') {
+        results.push({
+          type: 'tool_use',
+          id: `call_${callIdCounter++}`,
+          name,
+          input,
+        });
+      }
+    } catch {
+      // skip malformed JSON
+    }
+  }
+
+  return results;
+}
+
 function estimateCost(inputTokens: number, outputTokens: number): number {
   const inputRate = 3;
   const outputRate = 15;
@@ -112,14 +163,24 @@ export async function runAgentLoop(
     totalTokens += response.inputTokens + response.outputTokens;
     totalCost += estimateCost(response.inputTokens, response.outputTokens);
 
-    const toolCalls = response.content.filter((b): b is ToolUseBlock => b.type === 'tool_use');
+    let toolCalls = response.content.filter((b): b is ToolUseBlock => b.type === 'tool_use');
 
     if (toolCalls.length === 0) {
       const text = response.content
         .filter((b): b is TextBlock => b.type === 'text')
         .map(b => b.text)
         .join('\n');
-      return { result: text, totalTokens, totalCost };
+
+      const jsonToolCalls = extractJsonToolCalls(text);
+      if (jsonToolCalls.length > 0) {
+        toolCalls = jsonToolCalls;
+        response.content = [
+          ...response.content.filter((b): b is TextBlock => b.type === 'text'),
+          ...jsonToolCalls,
+        ];
+      } else {
+        return { result: text, totalTokens, totalCost };
+      }
     }
 
     const toolResults: ToolResultBlockParam[] = [];

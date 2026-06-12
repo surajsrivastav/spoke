@@ -16,7 +16,8 @@
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "@spoke/db": "workspace:*",
-    "@spoke/shared": "workspace:*"
+    "@spoke/shared": "workspace:*",
+    "@temporalio/client": "^1.10.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

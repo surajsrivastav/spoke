@@ -19,8 +19,6 @@ const mockSetHandler = vi.hoisted(() =>
   }),
 );
 
-const mockApplicationFailureCreate = vi.hoisted(() => vi.fn((opts: { message: string }) => new Error(opts.message)));
-
 vi.mock('@temporalio/workflow', () => ({
   proxyActivities: vi.fn(() => mockActivities),
   defineSignal: vi.fn(() => 'kill'),
@@ -29,10 +27,10 @@ vi.mock('@temporalio/workflow', () => ({
   sleep: vi.fn(),
   CancellationScope: { nonCancellable: vi.fn((fn: () => unknown) => fn()) },
   ActivityFailure: class ActivityFailure extends Error {},
-  ApplicationFailure: { create: mockApplicationFailureCreate },
+  ApplicationFailure: { create: vi.fn() },
 }));
 
-import { ApplicationFailure, proxyActivities, defineSignal } from '@temporalio/workflow';
+import { proxyActivities, defineSignal } from '@temporalio/workflow';
 import { agentTaskWorkflow } from '../workflows/agent-task.js';
 
 describe('agentTaskWorkflow', () => {
@@ -163,22 +161,15 @@ describe('agentTaskWorkflow', () => {
       mockActivities.verify.mockResolvedValue({ passed: false, errors: { error: 'always fails' } });
       mockActivities.destroySandbox.mockResolvedValue({ ok: true });
 
-      await expect(
-        agentTaskWorkflow({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' }),
-      ).rejects.toThrow();
+      const result = await agentTaskWorkflow({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' });
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'Verification failed after maximum retries',
-          type: 'VerificationFailed',
-        }),
-      );
       expect(mockActivities.runAgent).toHaveBeenCalledTimes(3);
       expect(mockActivities.verify).toHaveBeenCalledTimes(3);
       expect(mockActivities.pushBranch).not.toHaveBeenCalled();
       expect(mockActivities.createPr).not.toHaveBeenCalled();
       expect(mockActivities.updateTaskStatus).toHaveBeenCalledWith('task-1', 'failed');
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
+      expect(result).toEqual({ ok: true });
     });
   });
 
@@ -190,11 +181,8 @@ describe('agentTaskWorkflow', () => {
 
       await expect(
         agentTaskWorkflow({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' }),
-      ).rejects.toThrow();
+      ).rejects.toThrow('Provision failed');
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'agentTaskWorkflow failed: Provision failed', type: 'AgentTaskError' }),
-      );
       expect(mockActivities.updateTaskStatus).toHaveBeenCalledWith('task-1', 'running');
       expect(mockActivities.updateTaskStatus).toHaveBeenCalledWith('task-1', 'failed');
       expect(mockActivities.destroySandbox).not.toHaveBeenCalled();
@@ -209,11 +197,8 @@ describe('agentTaskWorkflow', () => {
 
       await expect(
         agentTaskWorkflow({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' }),
-      ).rejects.toThrow();
+      ).rejects.toThrow('Agent crashed');
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'agentTaskWorkflow failed: Agent crashed', type: 'AgentTaskError' }),
-      );
       expect(mockActivities.updateTaskStatus).toHaveBeenCalledWith('task-1', 'failed');
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
     });
@@ -230,11 +215,8 @@ describe('agentTaskWorkflow', () => {
 
       await expect(
         agentTaskWorkflow({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' }),
-      ).rejects.toThrow();
+      ).rejects.toThrow('PR creation failed');
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'agentTaskWorkflow failed: PR creation failed', type: 'AgentTaskError' }),
-      );
       expect(mockActivities.updateTaskStatus).toHaveBeenLastCalledWith('task-1', 'failed');
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
     });
@@ -273,19 +255,15 @@ describe('agentTaskWorkflow', () => {
       });
       mockActivities.runAgent.mockResolvedValue({ result: 'ok' });
 
-      await expect(
-        wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' }),
-      ).rejects.toThrow();
+      const result = await wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' });
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'agentTaskWorkflow failed: TaskKilled', type: 'TaskKilled' }),
-      );
       expect(mockActivities.updateTaskStatus).toHaveBeenCalledWith('task-1', 'running');
       expect(mockActivities.provisionSandbox).toHaveBeenCalled();
       expect(mockActivities.cloneRepo).toHaveBeenCalled();
       expect(mockActivities.runAgent).not.toHaveBeenCalled();
       expect(mockActivities.updateTaskStatus).toHaveBeenLastCalledWith('task-1', 'killed');
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
+      expect(result).toEqual({ ok: true });
     });
 
     it('handles kill signal after sandbox provision', async () => {
@@ -297,17 +275,13 @@ describe('agentTaskWorkflow', () => {
         return { sandboxId: 'sandbox-1', taskRunId: 'run-1' };
       });
 
-      await expect(
-        wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' }),
-      ).rejects.toThrow();
+      const result = await wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' });
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'agentTaskWorkflow failed: TaskKilled', type: 'TaskKilled' }),
-      );
       expect(mockActivities.provisionSandbox).toHaveBeenCalled();
       expect(mockActivities.runAgent).not.toHaveBeenCalled();
       expect(mockActivities.updateTaskStatus).toHaveBeenLastCalledWith('task-1', 'killed');
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
+      expect(result).toEqual({ ok: true });
     });
 
     it('stops after updateTaskStatus when killed before provisionSandbox', async () => {
@@ -318,16 +292,12 @@ describe('agentTaskWorkflow', () => {
       });
       mockActivities.destroySandbox.mockResolvedValue({ ok: true });
 
-      await expect(
-        wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' }),
-      ).rejects.toThrow();
+      const result = await wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' });
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'agentTaskWorkflow failed: TaskKilled', type: 'TaskKilled' }),
-      );
       expect(mockActivities.provisionSandbox).not.toHaveBeenCalled();
       expect(mockActivities.updateTaskStatus).toHaveBeenLastCalledWith('task-1', 'killed');
       expect(mockActivities.destroySandbox).not.toHaveBeenCalled();
+      expect(result).toEqual({ ok: true });
     });
 
     it('handles kill signal after runAgent', async () => {
@@ -341,17 +311,13 @@ describe('agentTaskWorkflow', () => {
       });
       mockActivities.destroySandbox.mockResolvedValue({ ok: true });
 
-      await expect(
-        wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' }),
-      ).rejects.toThrow();
+      const result = await wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' });
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'agentTaskWorkflow failed: TaskKilled', type: 'TaskKilled' }),
-      );
       expect(mockActivities.runAgent).toHaveBeenCalled();
       expect(mockActivities.verify).not.toHaveBeenCalled();
       expect(mockActivities.updateTaskStatus).toHaveBeenLastCalledWith('task-1', 'killed');
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
+      expect(result).toEqual({ ok: true });
     });
 
     it('handles kill signal after verify', async () => {
@@ -366,19 +332,15 @@ describe('agentTaskWorkflow', () => {
       });
       mockActivities.destroySandbox.mockResolvedValue({ ok: true });
 
-      await expect(
-        wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' }),
-      ).rejects.toThrow();
+      const result = await wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' });
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'agentTaskWorkflow failed: TaskKilled', type: 'TaskKilled' }),
-      );
       expect(mockActivities.runAgent).toHaveBeenCalled();
       expect(mockActivities.verify).toHaveBeenCalled();
       expect(mockActivities.pushBranch).not.toHaveBeenCalled();
       expect(mockActivities.createPr).not.toHaveBeenCalled();
       expect(mockActivities.updateTaskStatus).toHaveBeenLastCalledWith('task-1', 'killed');
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
+      expect(result).toEqual({ ok: true });
     });
 
     it('handles kill signal after pushBranch', async () => {
@@ -394,16 +356,12 @@ describe('agentTaskWorkflow', () => {
       });
       mockActivities.destroySandbox.mockResolvedValue({ ok: true });
 
-      await expect(
-        wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' }),
-      ).rejects.toThrow();
+      const result = await wf({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' });
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'agentTaskWorkflow failed: TaskKilled', type: 'TaskKilled' }),
-      );
       expect(mockActivities.createPr).not.toHaveBeenCalled();
       expect(mockActivities.updateTaskStatus).toHaveBeenLastCalledWith('task-1', 'killed');
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
+      expect(result).toEqual({ ok: true });
     });
   });
 });

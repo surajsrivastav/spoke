@@ -19,8 +19,6 @@ const mockSetHandler = vi.hoisted(() =>
   }),
 );
 
-const mockApplicationFailureCreate = vi.hoisted(() => vi.fn((opts: { message: string }) => new Error(opts.message)));
-
 vi.mock('@temporalio/workflow', () => ({
   proxyActivities: vi.fn(() => mockActivities),
   defineSignal: vi.fn(() => 'kill'),
@@ -29,10 +27,10 @@ vi.mock('@temporalio/workflow', () => ({
   sleep: vi.fn(),
   CancellationScope: { nonCancellable: vi.fn((fn: () => unknown) => fn()) },
   ActivityFailure: class ActivityFailure extends Error {},
-  ApplicationFailure: { create: mockApplicationFailureCreate },
+  ApplicationFailure: { create: vi.fn() },
 }));
 
-import { ApplicationFailure, proxyActivities, defineSignal } from '@temporalio/workflow';
+import { proxyActivities, defineSignal } from '@temporalio/workflow';
 import { agentTaskWorkflow } from '../workflows/agent-task.js';
 
 describe('F-02: Sandboxed Agent Execution — Acceptance Criteria', () => {
@@ -103,11 +101,8 @@ describe('F-02: Sandboxed Agent Execution — Acceptance Criteria', () => {
 
       await expect(
         agentTaskWorkflow({ taskId: 'task-1', goal: 'fix', repoUrl: 'r' }),
-      ).rejects.toThrow();
+      ).rejects.toThrow('SandboxProvisionError: timeout after 30s');
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'agentTaskWorkflow failed: SandboxProvisionError: timeout after 30s' }),
-      );
       expect(mockActivities.updateTaskStatus).toHaveBeenCalledWith('task-1', 'failed');
       expect(mockActivities.destroySandbox).not.toHaveBeenCalled();
     });
@@ -120,11 +115,8 @@ describe('F-02: Sandboxed Agent Execution — Acceptance Criteria', () => {
 
       await expect(
         agentTaskWorkflow({ taskId: 'task-1', goal: 'fix', repoUrl: 'https://github.com/org/private-repo' }),
-      ).rejects.toThrow();
+      ).rejects.toThrow('RepoAccessError: Repository not found');
 
-      expect(ApplicationFailure.create).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'agentTaskWorkflow failed: RepoAccessError: Repository not found' }),
-      );
       expect(mockActivities.cloneRepo).toHaveBeenCalled();
       expect(mockActivities.runAgent).not.toHaveBeenCalled();
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
@@ -139,7 +131,7 @@ describe('F-02: Sandboxed Agent Execution — Acceptance Criteria', () => {
 
       await expect(
         agentTaskWorkflow({ taskId: 'task-1', goal: 'fix', repoUrl: 'r' }),
-      ).rejects.toThrow();
+      ).rejects.toThrow('RateLimitError: 429 Too Many Requests');
 
       expect(mockActivities.runAgent).toHaveBeenCalledTimes(1);
       expect(mockActivities.updateTaskStatus).toHaveBeenCalledWith('task-1', 'failed');
@@ -178,7 +170,7 @@ describe('F-02: Sandboxed Agent Execution — Acceptance Criteria', () => {
 
       await expect(
         agentTaskWorkflow({ taskId: 'task-1', goal: 'complex task', repoUrl: 'r' }),
-      ).rejects.toThrow();
+      ).rejects.toThrow('CostCapExceededError: cost cap $5.00 reached');
 
       expect(mockActivities.updateTaskStatus).toHaveBeenCalledWith('task-1', 'failed');
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
@@ -193,7 +185,7 @@ describe('F-02: Sandboxed Agent Execution — Acceptance Criteria', () => {
 
       await expect(
         agentTaskWorkflow({ taskId: 'task-1', goal: 'fix', repoUrl: 'r' }),
-      ).rejects.toThrow();
+      ).rejects.toThrow('filesystem_error: file_write failed');
 
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
     });

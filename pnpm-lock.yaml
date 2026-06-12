@@ -50,6 +50,9 @@ importers:
       '@spoke/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@temporalio/client':
+        specifier: ^1.10.0
+        version: 1.17.2
       next:
         specifier: ^14.2.0
         version: 14.2.35(@babel/core@7.29.7)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)

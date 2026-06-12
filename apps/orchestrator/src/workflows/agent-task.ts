@@ -1,4 +1,4 @@
-import { proxyActivities, ApplicationFailure, defineSignal, setHandler } from '@temporalio/workflow';
+import { proxyActivities, defineSignal, setHandler } from '@temporalio/workflow';
 import type * as activities from '../activities/index.js';
 
 const { updateTaskStatus, provisionSandbox, cloneRepo, runAgent, verify, pushBranch, createPr, destroySandbox } =
@@ -16,10 +16,17 @@ export interface AgentTaskInput {
   repoUrl: string;
 }
 
+async function checkCancelled(taskId: string): Promise<{ killed: true } | null> {
+  if (cancelled) {
+    await updateTaskStatus(taskId, 'killed');
+    return { killed: true };
+  }
+  return null;
+}
+
 export async function agentTaskWorkflow(input: AgentTaskInput): Promise<{ ok: true }> {
   const { taskId, goal, repoUrl } = input;
   let sandboxId: string | undefined;
-  let taskRunId: string | undefined;
 
   setHandler(killSignal, () => {
     cancelled = true;
@@ -28,29 +35,26 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<{ ok: tr
   try {
     await updateTaskStatus(taskId, 'running');
 
-    if (cancelled) throw new Error('TaskKilled');
+    if (await checkCancelled(taskId)) return { ok: true };
 
     const provisionResult = await provisionSandbox(taskId);
     sandboxId = provisionResult.sandboxId;
-    taskRunId = provisionResult.taskRunId;
 
-    if (cancelled) throw new Error('TaskKilled');
+    await cloneRepo(sandboxId, repoUrl, provisionResult.taskRunId);
 
-    await cloneRepo(sandboxId, repoUrl, taskRunId);
-
-    if (cancelled) throw new Error('TaskKilled');
+    if (await checkCancelled(taskId)) return { ok: true };
 
     let verificationPassed = false;
     let prevErrors: Record<string, unknown> | undefined;
 
     for (let attempt = 0; attempt < 3; attempt++) {
-      await runAgent(sandboxId, goal, taskRunId, prevErrors);
+      await runAgent(sandboxId, goal, provisionResult.taskRunId, prevErrors);
 
-      if (cancelled) throw new Error('TaskKilled');
+      if (await checkCancelled(taskId)) return { ok: true };
 
-      const verResult = await verify(sandboxId, taskRunId);
+      const verResult = await verify(sandboxId, provisionResult.taskRunId);
 
-      if (cancelled) throw new Error('TaskKilled');
+      if (await checkCancelled(taskId)) return { ok: true };
 
       if (verResult.passed) {
         verificationPassed = true;
@@ -61,31 +65,24 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<{ ok: tr
     }
 
     if (!verificationPassed) {
-      throw ApplicationFailure.create({
-        message: 'Verification failed after maximum retries',
-        type: 'VerificationFailed',
-      });
+      await updateTaskStatus(taskId, 'failed');
+      return { ok: true };
     }
 
-    const { branch } = await pushBranch(sandboxId, repoUrl, goal, taskRunId, taskId);
+    const { branch } = await pushBranch(sandboxId, repoUrl, goal, provisionResult.taskRunId, taskId);
 
-    if (cancelled) throw new Error('TaskKilled');
+    if (await checkCancelled(taskId)) return { ok: true };
 
-    await createPr(repoUrl, branch, goal, taskRunId, taskId);
+    await createPr(repoUrl, branch, goal, provisionResult.taskRunId, taskId);
+
+    if (await checkCancelled(taskId)) return { ok: true };
 
     await updateTaskStatus(taskId, 'succeeded');
 
     return { ok: true };
   } catch (err) {
-    if (cancelled) {
-      await updateTaskStatus(taskId, 'killed').catch(() => {});
-    } else {
-      await updateTaskStatus(taskId, 'failed').catch(() => {});
-    }
-    throw ApplicationFailure.create({
-      message: `agentTaskWorkflow failed: ${err instanceof Error ? err.message : String(err)}`,
-      type: cancelled ? 'TaskKilled' : 'AgentTaskError',
-    });
+    await updateTaskStatus(taskId, 'failed').catch(() => {});
+    throw err;
   } finally {
     if (sandboxId) {
       await destroySandbox(sandboxId).catch(() => {});

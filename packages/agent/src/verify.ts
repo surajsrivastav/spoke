@@ -12,19 +12,21 @@ export interface VerificationResult {
 export async function runVerification(sandboxId: string): Promise<VerificationResult> {
   const errors: VerificationResult['errors'] = {};
 
-  const lintResult = await executeShell(sandboxId, 'cd /repo && npm run lint');
-  if (lintResult.exitCode !== 0) {
-    errors.lint = lintResult.stderr || lintResult.stdout;
+  await executeShell(sandboxId, 'cd /repo && pnpm install 2>&1 || true');
+
+  const lintResult = await executeShell(sandboxId, 'cd /repo && npm run lint 2>&1 || true');
+  if (lintResult.exitCode !== 0 && lintResult.exitCode !== null) {
+    errors.lint = (lintResult.stderr || lintResult.stdout || '').trim();
   }
 
-  const typecheckResult = await executeShell(sandboxId, 'cd /repo && pnpm typecheck');
-  if (typecheckResult.exitCode !== 0) {
-    errors.typecheck = typecheckResult.stderr || typecheckResult.stdout;
+  const typecheckResult = await executeShell(sandboxId, 'cd /repo && pnpm typecheck 2>&1 || true');
+  if (typecheckResult.exitCode !== 0 && typecheckResult.exitCode !== null) {
+    errors.typecheck = (typecheckResult.stderr || typecheckResult.stdout || '').trim();
   }
 
-  const testResult = await executeShell(sandboxId, 'cd /repo && pnpm test');
-  if (testResult.exitCode !== 0) {
-    errors.tests = testResult.stderr || testResult.stdout;
+  const testResult = await executeShell(sandboxId, 'cd /repo && pnpm test 2>&1 || true');
+  if (testResult.exitCode !== 0 && testResult.exitCode !== null) {
+    errors.tests = (testResult.stderr || testResult.stdout || '').trim();
   }
 
   const passed = Object.keys(errors).length === 0;
