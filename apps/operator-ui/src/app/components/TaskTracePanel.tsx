@@ -38,7 +38,13 @@ export default function TaskTracePanel({ task, onClose, onKill }: TracePanelProp
     fetch(`/api/tasks/${task.id}`)
       .then((r) => r.json())
       .then((data: any) => {
-        if (data.provenance) setProvenance(data.provenance);
+        const flat: Provenance[] = [];
+        if (data.task_runs) {
+          for (const run of data.task_runs) {
+            if (run.provenances) flat.push(...run.provenances);
+          }
+        }
+        if (flat.length > 0) setProvenance(flat);
       })
       .catch(() => {});
   }, [task.id]);
@@ -91,7 +97,8 @@ export default function TaskTracePanel({ task, onClose, onKill }: TracePanelProp
           return [{ type: "GIT_COMMITTED" as const, detail: `Branch: ${p.payload?.branch ?? ""}`, time: timeStr, id: p.id }];
         }
         if (p.type === "pr_opened") {
-          return [{ type: "PR_CREATED" as const, detail: `${p.payload?.prUrl ?? ""}`, time: timeStr, id: p.id }];
+          const url = (p.payload?.prUrl as string) ?? "";
+          return [{ type: "PR_CREATED" as const, detail: url ? `PR opened` : "", time: timeStr, id: p.id }];
         }
         return [];
       })
@@ -282,7 +289,17 @@ export default function TaskTracePanel({ task, onClose, onKill }: TracePanelProp
                     marginTop: 2,
                   }}
                 >
-                  {ev.detail}
+                  {ev.type === "PR_CREATED" && ev.detail === "PR opened"
+                    ? (() => {
+                        const p = provenance.find(pp => pp.id === ev.id);
+                        const url = p?.payload?.prUrl as string;
+                        return url ? (
+                          <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-primary)", textDecoration: "underline" }}>
+                            {url.replace("https://github.com/", "")}
+                          </a>
+                        ) : ev.detail;
+                      })()
+                    : ev.detail}
                 </div>
 
                 {/* Expandable content */}
@@ -368,14 +385,21 @@ export default function TaskTracePanel({ task, onClose, onKill }: TracePanelProp
           <Button variant="danger" onClick={onKill} style={{ flex: 1 }}>
             ✕ Kill Task
           </Button>
-        ) : (
-          <>
-            <Button variant="primary" style={{ flex: 1 }}>
-              View PR #47 →
-            </Button>
-            <Button variant="ghost">Copy trace JSON</Button>
-          </>
-        )}
+        ) : (() => {
+          const prEv = provenance.findLast(p => p.type === "pr_opened");
+          const prUrl = prEv?.payload?.prUrl as string | undefined;
+          return (
+            <>
+              {prUrl ? (
+                <a href={prUrl} target="_blank" rel="noopener noreferrer" style={{ flex: 1, textDecoration: "none" }}>
+                  <Button variant="primary" style={{ width: "100%" }}>
+                    View PR →
+                  </Button>
+                </a>
+              ) : null}
+            </>
+          );
+        })()}
       </div>
     </div>
   );

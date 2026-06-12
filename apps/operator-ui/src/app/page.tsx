@@ -15,6 +15,7 @@ export default function FleetPage() {
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [killTarget, setKillTarget] = useState<Task | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
 
@@ -116,6 +117,30 @@ export default function FleetPage() {
       console.error("Failed to kill task");
     }
   };
+
+  const [createGoal, setCreateGoal] = useState("");
+  const [createRepo, setCreateRepo] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const handleCreateTask = useCallback(async () => {
+    if (!createGoal.trim() || !createRepo.trim()) return;
+    setCreating(true);
+    try {
+      await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal: createGoal.trim(), repo_url: createRepo.trim() }),
+      });
+      setShowCreate(false);
+      setCreateGoal("");
+      setCreateRepo("");
+      fetchTasks();
+    } catch {
+      console.error("Failed to create task");
+    } finally {
+      setCreating(false);
+    }
+  }, [createGoal, createRepo, fetchTasks]);
 
   if (loading) {
     return (
@@ -267,8 +292,25 @@ export default function FleetPage() {
           >
             Tasks
           </div>
-          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", fontFamily: "Geist Mono, monospace" }}>
-            {tasks.length} total
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button
+              onClick={() => setShowCreate(true)}
+              style={{
+                background: "var(--accent-primary)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                padding: "5px 12px",
+                fontSize: "var(--text-xs)",
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
+            >
+              + New Task
+            </button>
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", fontFamily: "Geist Mono, monospace" }}>
+              {tasks.length} total
+            </div>
           </div>
         </div>
 
@@ -311,6 +353,7 @@ export default function FleetPage() {
             </div>
             <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
               <button
+                onClick={() => setShowCreate(true)}
                 style={{
                   background: "var(--accent-primary)",
                   color: "#fff",
@@ -529,12 +572,12 @@ export default function FleetPage() {
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span>Executing step {Math.floor(Math.random() * 8) + 2}/10</span>
+                      <span>{task.status === "pending" ? "Queued — waiting for worker..." : "Running..."}</span>
                       <span style={{ color: "var(--text-tertiary)", fontFamily: "Geist Mono, monospace" }}>
                         {task.status === "pending" ? "queued" : "in progress"}
                       </span>
                     </div>
-                    <ProgressBar value={30 + Math.random() * 60} />
+                    <ProgressBar value={task.status === "pending" ? 5 : 40} />
                   </div>
                 )}
               </div>
@@ -550,6 +593,151 @@ export default function FleetPage() {
           onClose={() => setSelectedTask(null)}
           onKill={() => setKillTarget(selectedTask)}
         />
+      )}
+
+      {/* Create Task Modal */}
+      {showCreate && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+          onClick={() => !creating && setShowCreate(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            style={{
+              background: "var(--bg-base)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 12,
+              width: 480,
+              padding: 0,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "var(--sp-5) var(--sp-6) var(--sp-3)",
+              }}
+            >
+              <span style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
+                New Task
+              </span>
+              <button
+                onClick={() => setShowCreate(false)}
+                disabled={creating}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--text-tertiary)",
+                  cursor: "pointer",
+                  fontSize: 16,
+                  padding: 4,
+                  opacity: creating ? 0.4 : 1,
+                }}
+              >
+                {"\u2715"}
+              </button>
+            </div>
+            <div style={{ padding: "0 var(--sp-6) var(--sp-4)", display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 4 }}>
+                  Goal
+                </div>
+                <input
+                  value={createGoal}
+                  onChange={(e) => setCreateGoal(e.target.value)}
+                  placeholder="e.g. Add a health check endpoint to the API"
+                  disabled={creating}
+                  style={{
+                    width: "100%",
+                    background: "transparent",
+                    border: "1px solid var(--border-subtle)",
+                    borderRadius: 6,
+                    padding: "8px 12px",
+                    fontSize: 14,
+                    color: "var(--text-primary)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 4 }}>
+                  Repo URL
+                </div>
+                <input
+                  value={createRepo}
+                  onChange={(e) => setCreateRepo(e.target.value)}
+                  placeholder="https://github.com/org/repo"
+                  disabled={creating}
+                  style={{
+                    width: "100%",
+                    background: "transparent",
+                    border: "1px solid var(--border-subtle)",
+                    borderRadius: 6,
+                    padding: "8px 12px",
+                    fontSize: 14,
+                    color: "var(--text-primary)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    fontFamily: "inherit",
+                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleCreateTask(); }}
+                />
+              </div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 8,
+                padding: "var(--sp-3) var(--sp-6) var(--sp-5)",
+                borderTop: "1px solid var(--border-subtle)",
+              }}
+            >
+              <button
+                onClick={() => setShowCreate(false)}
+                disabled={creating}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--text-secondary)",
+                  cursor: "pointer",
+                  padding: "7px 14px",
+                  fontSize: "var(--text-ui)",
+                  fontWeight: 500,
+                  borderRadius: 6,
+                  opacity: creating ? 0.4 : 1,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateTask}
+                disabled={creating || !createGoal.trim() || !createRepo.trim()}
+                style={{
+                  background: !createGoal.trim() || !createRepo.trim() ? "var(--bg-elevated)" : "var(--accent-primary)",
+                  color: !createGoal.trim() || !createRepo.trim() ? "var(--text-tertiary)" : "#fff",
+                  border: "none",
+                  cursor: !createGoal.trim() || !createRepo.trim() ? "not-allowed" : "pointer",
+                  padding: "7px 14px",
+                  fontSize: "var(--text-ui)",
+                  fontWeight: 500,
+                  borderRadius: 6,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                {creating ? "Creating..." : "Create Task"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Kill Modal */}

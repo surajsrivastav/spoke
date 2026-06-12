@@ -123,6 +123,9 @@ spoke/
 - Architectural decisions (from architect)
 - Skill context (which integrations to use)
 
+**First step: produce a lightweight plan**
+Before writing any code, produce a short bullet-point plan of what you intend to build (files to create/modify, key API decisions). Present it to the user for confirmation. Only proceed to implementation after receiving explicit approval.
+
 **Outputs:**
 - Working TypeScript code
 - Unit tests
@@ -148,6 +151,7 @@ spoke/
 - ❌ Don't implement features without acceptance criteria
 - ❌ Don't skip writing tests (must accompany code)
 - ❌ Don't introduce new dependencies without justifying
+- ❌ Don't start coding without first presenting a brief plan to the user
 
 ---
 
