@@ -2,6 +2,8 @@ import { Client } from '@temporalio/client';
 import { NativeConnection, Worker } from '@temporalio/worker';
 import * as activities from './activities/index.js';
 import { env } from '@spoke/shared';
+import { createServer } from 'http';
+import { healthHandler } from './health.js';
 
 export async function startAgentTask(
   taskId: string,
@@ -67,6 +69,11 @@ async function pollPendingTasks(client: Client) {
 async function run() {
   const connection = await NativeConnection.connect({ address: env.TEMPORAL_ADDRESS });
   const client = new Client({ connection });
+
+  // Start the health check server
+  createServer(healthHandler).listen(3000, () => {
+    console.log('Health check server is running on http://localhost:3000');
+  });
 
   const worker = await Worker.create({
     connection,
