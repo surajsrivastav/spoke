@@ -16,3 +16,4 @@ coverage/
 reports/
 .stryker-tmp/
 .stryker-results/
+.playwright-mcp/
