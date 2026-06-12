@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const env = {
   // Database
   DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://spoke:spoke_dev@localhost:5432/spoke_dev',
@@ -31,3 +33,15 @@ export const env = {
   // Cost cap
   DEFAULT_COST_CAP_USD: Number(process.env.DEFAULT_COST_CAP_USD ?? '5.00'),
 };
+
+export type CostConfig = {
+  defaultCostCap: number;
+  maxCostCap: number;
+  modelCosts: Record<string, number>;
+};
+
+export const CostConfigSchema = z.object({
+  defaultCostCap: z.number(),
+  maxCostCap: z.number(),
+  modelCosts: z.record(z.string(), z.number()),
+});
