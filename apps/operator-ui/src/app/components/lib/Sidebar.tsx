@@ -1,10 +1,12 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { NAV_ITEMS } from "../../lib/constants";
+import { NAV_ITEMS, NAV_ITEM_ICONS } from "../../lib/constants";
+import { useTheme } from "./ThemeContext";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <aside
@@ -21,12 +23,13 @@ export default function Sidebar() {
         zIndex: 30,
       }}
     >
-      {/* Logo */}
       <div style={{ padding: "20px 16px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 18, color: "#fff", fontWeight: 800, fontFamily: "Geist Mono, monospace" }}>
-            ◈
-          </span>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="10" cy="10" r="8" />
+            <path d="M10 6v8" />
+            <path d="M6 10h8" />
+          </svg>
           <span
             style={{
               fontWeight: 800,
@@ -46,20 +49,20 @@ export default function Sidebar() {
             letterSpacing: "0.15em",
             textTransform: "uppercase",
             marginTop: 4,
-            marginLeft: 26,
+            marginLeft: 28,
           }}
         >
           Agent Control Plane
         </div>
       </div>
 
-      {/* Navigation */}
       <nav style={{ padding: "8px 8px", flex: 1 }}>
         {NAV_ITEMS.map((item) => {
           const isActive =
             item.href === "/"
               ? pathname === "/"
               : pathname.startsWith(item.href);
+          const IconComponent = NAV_ITEM_ICONS[item.id];
           return (
             <a
               key={item.id}
@@ -86,31 +89,54 @@ export default function Sidebar() {
                 if (!isActive) e.currentTarget.style.background = "transparent";
               }}
             >
-              <span style={{ fontSize: 14 }}>{item.icon}</span>
+              <span style={{ fontSize: 14, lineHeight: 0 }}>
+                <IconComponent />
+              </span>
               {item.label}
             </a>
           );
         })}
       </nav>
 
-      {/* Bottom Status */}
       <div
         style={{
           padding: "12px 16px",
           borderTop: "1px solid var(--border-subtle)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--status-running)" }}>
-            ● 3 running
-          </span>
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>
-            ● 12 done
-          </span>
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--status-failed)" }}>
-            ● 1 failed
-          </span>
-        </div>
+        <button
+          onClick={toggleTheme}
+          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          style={{
+            background: "var(--bg-elevated)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: 6,
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "5px 10px",
+            fontSize: "var(--text-xs)",
+            fontWeight: 500,
+          }}
+        >
+          {theme === "dark" ? (
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="8" cy="8" r="3" />
+              <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 8.5A6 6 0 0 1 7.5 2 6 6 0 1 0 14 8.5z" />
+            </svg>
+          )}
+          {theme === "dark" ? "Light" : "Dark"}
+        </button>
+
         <div
           style={{
             fontSize: "var(--text-sm)",
@@ -118,11 +144,10 @@ export default function Sidebar() {
             fontFamily: "Geist Mono, monospace",
           }}
         >
-          $106.20 today
+          $106.20
         </div>
       </div>
 
-      {/* User area */}
       <div
         style={{
           padding: "12px 16px",

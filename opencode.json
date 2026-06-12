@@ -3,5 +3,15 @@
   "instructions": [".spoke/AGENTS.md"],
   "skills": {
     "paths": [".spoke/skills"]
+  },
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "-y", "@playwright/mcp"],
+      "enabled": true,
+      "env": {
+        "BROWSER": "chromium"
+      }
+    }
   }
 }

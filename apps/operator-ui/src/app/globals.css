@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+:root,
+.dark {
   --bg-base: #09090b;
   --bg-surface: #0f0f12;
   --bg-elevated: #13131a;
@@ -29,6 +30,9 @@
   --status-killed: #6b7280;
   --status-warning: #f59e0b;
 
+  --arrow-up: #22c55e;
+  --arrow-down: #ef4444;
+
   --text-xs: 10px;
   --text-sm: 12px;
   --text-base: 13px;
@@ -51,6 +55,37 @@
   --detail-panel-width: 380px;
 }
 
+.light {
+  --bg-base: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --bg-overlay: #e2e8f0;
+
+  --border-subtle: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #94a3b8;
+  --text-disabled: #cbd5e1;
+
+  --accent-primary: #6366f1;
+  --accent-glow: rgba(99, 102, 241, 0.1);
+
+  --status-running: #2563eb;
+  --status-planning: #9333ea;
+  --status-verifying: #7c3aed;
+  --status-provisioning: #0d9488;
+  --status-completed: #16a34a;
+  --status-failed: #dc2626;
+  --status-killed: #6b7280;
+  --status-warning: #d97706;
+
+  --arrow-up: #16a34a;
+  --arrow-down: #dc2626;
+}
+
 * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -61,6 +96,11 @@ body {
   color: var(--text-primary);
   font-family: "Geist", "Inter", system-ui, sans-serif;
   font-size: var(--text-base);
+}
+
+::selection {
+  background: var(--accent-primary);
+  color: #fff;
 }
 
 @keyframes shimmer {

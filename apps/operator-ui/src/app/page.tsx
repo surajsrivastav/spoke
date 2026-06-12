@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { Task, TaskRun } from "@spoke/shared";
 import { generateTaskName } from "@spoke/shared";
 import { STATUS_CONFIG } from "./lib/constants";
@@ -8,6 +8,38 @@ import { StatusBadge, StatusDot } from "./components/lib/StatusBadge";
 import { ProgressBar } from "./components/lib/ProgressBar";
 import KillModal from "./components/lib/KillModal";
 import TaskTracePanel from "./components/TaskTracePanel";
+
+type Tab = "all" | "running" | "completed" | "failed";
+
+const TEMPLATES = [
+  { label: "Custom task", goal: "", repo: "" },
+  { label: "Add UI feature", goal: "Add a dark mode toggle to the UI", repo: "https://github.com/org/spoke" },
+  { label: "Write tests", goal: "Write unit tests for the API layer", repo: "https://github.com/org/spoke" },
+  { label: "Fix bugs", goal: "Fix rate limiting middleware bug", repo: "https://github.com/org/spoke" },
+  { label: "Create app", goal: "Create a CLI calculator application", repo: "https://github.com/org/spoke" },
+];
+
+const ESTIMATE_PER_TOKEN = 0.000015;
+
+function estimateCost(goal: string): number {
+  const words = goal.split(/\s+/).length;
+  const tokens = words * 1.3;
+  const modelCalls = Math.max(1, Math.ceil(words / 50));
+  return +(tokens * ESTIMATE_PER_TOKEN * modelCalls * 3).toFixed(2);
+}
+
+function DeltaArrow({ value }: { value: string }) {
+  const isUp = value.startsWith("↑");
+  const isDown = value.startsWith("↓");
+  const color = isUp ? "var(--arrow-up)" : isDown ? "var(--arrow-down)" : "var(--text-tertiary)";
+  const arrow = isUp ? "↑" : isDown ? "↓" : "–";
+  const num = value.replace(/[↑↓]/g, "").trim();
+  return (
+    <span style={{ color, fontSize: "var(--text-xs)", fontVariantNumeric: "tabular-nums" }}>
+      {arrow} {num}
+    </span>
+  );
+}
 
 export default function FleetPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -17,16 +49,9 @@ export default function FleetPage() {
   const [killTarget, setKillTarget] = useState<Task | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
-
-  const toggleGoal = (id: string) => {
-    setExpandedGoals((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const [activeTab, setActiveTab] = useState<Tab>("all");
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -76,6 +101,11 @@ export default function FleetPage() {
   // Keyboard navigation
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      if (e.key === "/" && !showCreate) {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
       if (!selectedTask && tasks.length > 0) {
         if (e.key === "j" || e.key === "J") {
           const idx = tasks.findIndex((t) => t.id === hoveredId);
@@ -99,7 +129,7 @@ export default function FleetPage() {
     };
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, [tasks, selectedTask, hoveredId]);
+  }, [tasks, selectedTask, hoveredId, showCreate]);
 
   // Stats
   const running = tasks.filter((t) => t.status === "running").length;
@@ -107,6 +137,21 @@ export default function FleetPage() {
   const failed = tasks.filter((t) => t.status === "failed").length;
   const totalCost = tasks.length * 1.24;
   const yesterdayCost = 98.5;
+  const prevRunning = Math.max(0, running - Math.floor(Math.random() * 3));
+  const prevCompleted = Math.max(0, completed - Math.floor(Math.random() * 2));
+  const prevFailed = Math.max(0, failed - Math.floor(Math.random() * 1));
+  const prevCost = 85.0;
+
+  const filteredTasks = tasks.filter((t) => {
+    if (activeTab === "running") return t.status === "running" || t.status === "pending";
+    if (activeTab === "completed") return t.status === "succeeded";
+    if (activeTab === "failed") return t.status === "failed";
+    return true;
+  }).filter((t) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return t.id.toLowerCase().includes(q) || t.goal.toLowerCase().includes(q) || (t.repo_url || "").toLowerCase().includes(q);
+  });
 
   const userIsActive = (t: Task) => t.status === "running" || t.status === "pending";
 
@@ -121,6 +166,7 @@ export default function FleetPage() {
   const [createGoal, setCreateGoal] = useState("");
   const [createRepo, setCreateRepo] = useState("");
   const [creating, setCreating] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
 
   const handleCreateTask = useCallback(async () => {
     if (!createGoal.trim() || !createRepo.trim()) return;
@@ -134,6 +180,7 @@ export default function FleetPage() {
       setShowCreate(false);
       setCreateGoal("");
       setCreateRepo("");
+      setSelectedTemplate(null);
       fetchTasks();
     } catch {
       console.error("Failed to create task");
@@ -142,16 +189,25 @@ export default function FleetPage() {
     }
   }, [createGoal, createRepo, fetchTasks]);
 
+  const selectTemplate = (idx: number) => {
+    const t = TEMPLATES[idx];
+    setSelectedTemplate(idx);
+    setCreateGoal(t.goal);
+    setCreateRepo(t.repo);
+  };
+
+  const estimatedCost = createGoal.trim() ? estimateCost(createGoal) : null;
+
   if (loading) {
     return (
       <div>
-        <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
+        <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
               style={{
                 flex: 1,
-                height: 80,
+                height: 72,
                 background: "var(--bg-surface)",
                 borderRadius: 8,
                 border: "1px solid var(--border-subtle)",
@@ -175,7 +231,7 @@ export default function FleetPage() {
           <div
             key={i}
             style={{
-              height: 48,
+              height: 44,
               background: "var(--bg-surface)",
               borderBottom: "1px solid var(--border-subtle)",
               position: "relative",
@@ -200,31 +256,31 @@ export default function FleetPage() {
   return (
     <div>
       {/* Stat Row */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
         {[
           {
             label: "Running",
             value: running,
             color: "var(--status-running)",
-            delta: `↑ ${Math.floor(Math.random() * 5)} from yesterday`,
+            delta: `↑ ${running - prevRunning}`,
           },
           {
             label: "Completed",
             value: completed,
             color: "var(--status-completed)",
-            delta: `↑ ${Math.floor(Math.random() * 3)} from yesterday`,
+            delta: `↑ ${completed - prevCompleted}`,
           },
           {
             label: "Failed",
             value: failed,
             color: failed > 0 ? "var(--status-failed)" : "var(--text-tertiary)",
-            delta: failed > 0 ? "Action needed" : "No failures",
+            delta: failed > 0 ? "↑ Action needed" : "– 0",
           },
           {
             label: "Cost today",
             value: `$${totalCost.toFixed(2)}`,
             color: totalCost > 100 ? "var(--status-warning)" : "var(--text-primary)",
-            delta: `↑ ${((totalCost / yesterdayCost - 1) * 100).toFixed(0)}% from yesterday`,
+            delta: `${totalCost > prevCost ? "↑" : "↓"} $${Math.abs(totalCost - prevCost).toFixed(2)}`,
           },
         ].map((stat) => (
           <div
@@ -234,7 +290,7 @@ export default function FleetPage() {
               background: "var(--bg-surface)",
               border: "1px solid var(--border-subtle)",
               borderRadius: 8,
-              padding: "var(--sp-4) var(--sp-5)",
+              padding: "var(--sp-3) var(--sp-4)",
             }}
           >
             <div
@@ -243,14 +299,14 @@ export default function FleetPage() {
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
                 color: "var(--text-tertiary)",
-                marginBottom: 4,
+                marginBottom: 2,
               }}
             >
               {stat.label}
             </div>
             <div
               style={{
-                fontSize: typeof stat.value === "number" ? 28 : 22,
+                fontSize: typeof stat.value === "number" ? 24 : 18,
                 fontWeight: 800,
                 color: stat.color,
                 fontVariantNumeric: "tabular-nums",
@@ -259,14 +315,8 @@ export default function FleetPage() {
             >
               {stat.value}
             </div>
-            <div
-              style={{
-                fontSize: "var(--text-xs)",
-                color: "var(--text-tertiary)",
-                marginTop: 4,
-              }}
-            >
-              {stat.delta}
+            <div style={{ marginTop: 2 }}>
+              <DeltaArrow value={stat.delta} />
             </div>
           </div>
         ))}
@@ -279,20 +329,62 @@ export default function FleetPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: 12,
+            marginBottom: 10,
           }}
         >
-          <div
-            style={{
-              fontSize: "var(--text-sub)",
-              fontWeight: 600,
-              letterSpacing: "-0.02em",
-              color: "var(--text-primary)",
-            }}
-          >
-            Tasks
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span
+              style={{
+                fontSize: "var(--text-sub)",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "var(--text-primary)",
+              }}
+            >
+              Tasks
+            </span>
+            <div style={{ display: "flex", gap: 2, background: "var(--bg-surface)", borderRadius: 6, border: "1px solid var(--border-subtle)", padding: 2 }}>
+              {(["all", "running", "completed", "failed"] as Tab[]).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  style={{
+                    background: activeTab === tab ? "var(--accent-primary)" : "transparent",
+                    color: activeTab === tab ? "#fff" : "var(--text-tertiary)",
+                    border: "none",
+                    borderRadius: 4,
+                    padding: "3px 10px",
+                    fontSize: "var(--text-xs)",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    textTransform: "capitalize",
+                    transition: "all 100ms ease",
+                  }}
+                >
+                  {tab === "all" ? "All" : tab}
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <input
+              ref={searchRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder='Search tasks... (press "/")'
+              style={{
+                background: "transparent",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: 6,
+                padding: "5px 10px",
+                fontSize: "var(--text-xs)",
+                color: "var(--text-primary)",
+                outline: "none",
+                width: 180,
+                fontFamily: "inherit",
+              }}
+            />
             <button
               onClick={() => setShowCreate(true)}
               style={{
@@ -308,9 +400,9 @@ export default function FleetPage() {
             >
               + New Task
             </button>
-            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", fontFamily: "Geist Mono, monospace" }}>
-              {tasks.length} total
-            </div>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", fontFamily: "Geist Mono, monospace" }}>
+              {filteredTasks.length}/{tasks.length}
+            </span>
           </div>
         </div>
 
@@ -320,24 +412,31 @@ export default function FleetPage() {
             display: "flex",
             alignItems: "center",
             gap: 8,
-            padding: "6px 0",
+            padding: "5px 0 5px 8px",
             borderBottom: "1px solid var(--border-subtle)",
             marginBottom: 0,
           }}
         >
-          <div style={{ width: 24 }} />
+          <div style={{ width: 16 }} />
           <div style={{ width: 90, fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)" }}>ID</div>
-          <div style={{ width: 90, fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", textAlign: "center" }}>Status</div>
+          <div style={{ width: 80, fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", textAlign: "center" }}>Status</div>
           <div style={{ flex: 1, fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)" }}>Task</div>
+          <div style={{ width: 100, fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)" }}>Source</div>
           <div style={{ width: 80, fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)" }}>Repo</div>
-          <div style={{ width: 70, fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", textAlign: "right" }}>Cost</div>
-          <div style={{ width: 65, fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", textAlign: "right" }}>Time</div>
-          <div style={{ width: 60 }} />
+          <div style={{ width: 65, fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", textAlign: "right" }}>Cost</div>
+          <div style={{ width: 60, fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", textAlign: "right" }}>Time</div>
+          <div style={{ width: 55 }} />
         </div>
 
-        {tasks.length === 0 && (
+        {filteredTasks.length === 0 && (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
-            <div style={{ fontSize: 40, color: "var(--text-tertiary)", marginBottom: 12 }}>◈</div>
+            <div style={{ fontSize: 40, color: "var(--text-tertiary)", marginBottom: 12 }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto" }}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+            </div>
             <div
               style={{
                 fontSize: "var(--text-h3)",
@@ -346,48 +445,50 @@ export default function FleetPage() {
                 marginBottom: 8,
               }}
             >
-              No active tasks
+              {searchQuery ? "No matching tasks" : "No active tasks"}
             </div>
             <div style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)", marginBottom: 20 }}>
-              Send @spoke &lt;goal&gt; in Slack or start a task from the CLI.
+              {searchQuery ? "Try a different search term" : "Send @spoke <goal> in Slack or start a task from the CLI."}
             </div>
-            <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
-              <button
-                onClick={() => setShowCreate(true)}
-                style={{
-                  background: "var(--accent-primary)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "7px 14px",
-                  fontSize: "var(--text-ui)",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                }}
-              >
-                + New Task
-              </button>
-              <button
-                style={{
-                  background: "transparent",
-                  color: "var(--text-secondary)",
-                  border: "1px solid var(--border-default)",
-                  borderRadius: 6,
-                  padding: "7px 14px",
-                  fontSize: "var(--text-ui)",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                }}
-              >
-                View docs →
-              </button>
-            </div>
+            {!searchQuery && (
+              <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+                <button
+                  onClick={() => setShowCreate(true)}
+                  style={{
+                    background: "var(--accent-primary)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "7px 14px",
+                    fontSize: "var(--text-ui)",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  + New Task
+                </button>
+                <button
+                  style={{
+                    background: "transparent",
+                    color: "var(--text-secondary)",
+                    border: "1px solid var(--border-default)",
+                    borderRadius: 6,
+                    padding: "7px 14px",
+                    fontSize: "var(--text-ui)",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  View docs →
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {/* Task rows */}
         <div>
-          {tasks.map((task, index) => {
+          {filteredTasks.map((task) => {
             const isSelected = selectedTask?.id === task.id;
             const isHovered = hoveredId === task.id;
             const cfg = STATUS_CONFIG[task.status];
@@ -405,6 +506,12 @@ export default function FleetPage() {
             const seconds = Math.floor(Math.random() * 60);
             const timeStr = `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
 
+            const sources = ["Slack", "CLI", "API", "WhatsApp"] as const;
+            const source = sources[Math.floor(Math.random() * sources.length)];
+
+            const taskLabel = generateTaskName(task.goal);
+            const nameIsTruncated = taskLabel !== task.goal;
+
             return (
               <div key={task.id}>
                 <div
@@ -415,7 +522,7 @@ export default function FleetPage() {
                     display: "flex",
                     alignItems: "center",
                     gap: 8,
-                    padding: "var(--sp-3) 0",
+                    padding: "8px 0 8px 8px",
                     borderBottom: "1px solid var(--border-subtle)",
                     cursor: "pointer",
                     background: isSelected
@@ -424,17 +531,14 @@ export default function FleetPage() {
                         ? "var(--bg-surface)"
                         : "transparent",
                     borderLeft: isSelected ? "2px solid var(--accent-primary)" : "2px solid transparent",
-                    paddingLeft: isSelected ? 6 : 8,
                     transition: "background 100ms ease",
                     opacity: !isActive && task.status !== "failed" && task.status !== "killed" ? 0.7 : 1,
                   }}
                 >
-                  {/* Status dot */}
                   <div style={{ width: 16, display: "flex", justifyContent: "center" }}>
                     <StatusDot status={task.status} pulsing={isActive} />
                   </div>
 
-                  {/* ID */}
                   <div
                     style={{
                       width: 90,
@@ -445,47 +549,56 @@ export default function FleetPage() {
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                     }}
+                    title={task.id}
                   >
                     {task.id.slice(0, 10)}
                   </div>
 
-                  {/* Status badge */}
-                  <div style={{ width: 90, display: "flex", justifyContent: "center" }}>
+                  <div style={{ width: 80, display: "flex", justifyContent: "center" }}>
                     <StatusBadge status={task.status} />
                   </div>
 
-                  {/* Name */}
                   <div
                     style={{
                       flex: 1,
                       fontSize: "var(--text-base)",
                       color: "var(--text-primary)",
                       fontWeight: 500,
-                      wordBreak: "break-word",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                       lineHeight: 1.4,
                       cursor: "default",
                     }}
                     onClick={(e) => e.stopPropagation()}
+                    title={nameIsTruncated ? task.goal : undefined}
                   >
-                    {expandedGoals.has(task.id) ? task.goal : generateTaskName(task.goal)}
-                    {task.goal !== generateTaskName(task.goal) && (
-                      <span
-                        onClick={(e) => { e.stopPropagation(); toggleGoal(task.id); }}
-                        style={{
-                          color: "var(--accent-primary)",
-                          cursor: "pointer",
-                          marginLeft: 4,
-                          fontSize: "var(--text-sm)",
-                          fontWeight: 600,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {expandedGoals.has(task.id) ? "less" : "more"}
-                      </span>
-                    )}
+                    {taskLabel}
                   </div>
 
-                  {/* Repo */}
+                  <div
+                    style={{
+                      width: 100,
+                      fontSize: "var(--text-sm)",
+                      color: "var(--text-tertiary)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: source === "Slack" ? "#4a154b" : source === "WhatsApp" ? "#25D366" : source === "CLI" ? "var(--accent-primary)" : "var(--text-tertiary)",
+                        flexShrink: 0,
+                      }}
+                    />
+                    {source}
+                  </div>
+
                   <div
                     style={{
                       width: 80,
@@ -496,14 +609,14 @@ export default function FleetPage() {
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                     }}
+                    title={task.repo_url || ""}
                   >
                     {(task.repo_url || "").replace("https://github.com/", "") || "org/api"}
                   </div>
 
-                  {/* Cost */}
                   <div
                     style={{
-                      width: 70,
+                      width: 65,
                       textAlign: "right",
                       fontFamily: "Geist Mono, monospace",
                       fontSize: "var(--text-sm)",
@@ -514,10 +627,9 @@ export default function FleetPage() {
                     ${estimatedCost.toFixed(2)}
                   </div>
 
-                  {/* Time */}
                   <div
                     style={{
-                      width: 65,
+                      width: 60,
                       textAlign: "right",
                       fontSize: "var(--text-xs)",
                       color: "var(--text-tertiary)",
@@ -527,8 +639,7 @@ export default function FleetPage() {
                     {timeStr}
                   </div>
 
-                  {/* Kill button (hover only for active) */}
-                  <div style={{ width: 60, textAlign: "center" }}>
+                  <div style={{ width: 55, textAlign: "center" }}>
                     {isActive && (isHovered || isSelected) && (
                       <button
                         onClick={(e) => {
@@ -548,7 +659,7 @@ export default function FleetPage() {
                           whiteSpace: "nowrap",
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "var(--bg-surface)";
+                          e.currentTarget.style.background = "var(--bg-overlay)";
                           e.currentTarget.style.border = "1px solid var(--border-subtle)";
                         }}
                         onMouseLeave={(e) => {
@@ -562,16 +673,15 @@ export default function FleetPage() {
                   </div>
                 </div>
 
-                {/* Progress sub-row for active tasks */}
                 {isActive && (
                   <div
                     style={{
-                      padding: "0 0 var(--sp-2) 26px",
+                      padding: "0 0 6px 26px",
                       fontSize: "var(--text-xs)",
                       color: "var(--text-secondary)",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
                       <span>{task.status === "pending" ? "Queued — waiting for worker..." : "Running..."}</span>
                       <span style={{ color: "var(--text-tertiary)", fontFamily: "Geist Mono, monospace" }}>
                         {task.status === "pending" ? "queued" : "in progress"}
@@ -609,7 +719,7 @@ export default function FleetPage() {
               background: "var(--bg-base)",
               border: "1px solid var(--border-subtle)",
               borderRadius: 12,
-              width: 480,
+              width: 520,
               padding: 0,
             }}
             onClick={(e) => e.stopPropagation()}
@@ -641,16 +751,52 @@ export default function FleetPage() {
                 {"\u2715"}
               </button>
             </div>
+
+            {/* Templates */}
+            <div style={{ padding: "0 var(--sp-6) var(--sp-3)" }}>
+              <div style={{ fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 6 }}>
+                Quick templates
+              </div>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                {TEMPLATES.map((t, i) => (
+                  <button
+                    key={i}
+                    onClick={() => selectTemplate(i)}
+                    style={{
+                      background: selectedTemplate === i ? "var(--accent-glow)" : "var(--bg-surface)",
+                      border: selectedTemplate === i ? "1px solid var(--accent-primary)" : "1px solid var(--border-subtle)",
+                      borderRadius: 6,
+                      padding: "4px 10px",
+                      fontSize: "var(--text-xs)",
+                      color: selectedTemplate === i ? "var(--accent-primary)" : "var(--text-secondary)",
+                      cursor: "pointer",
+                      transition: "all 100ms ease",
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div style={{ padding: "0 var(--sp-6) var(--sp-4)", display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
-                <div style={{ fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 4 }}>
+                <label
+                  htmlFor="create-goal"
+                  style={{ fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 4, display: "block" }}
+                >
                   Goal
-                </div>
+                </label>
                 <input
+                  id="create-goal"
                   value={createGoal}
-                  onChange={(e) => setCreateGoal(e.target.value)}
+                  onChange={(e) => {
+                    setCreateGoal(e.target.value);
+                    setSelectedTemplate(null);
+                  }}
                   placeholder="e.g. Add a health check endpoint to the API"
                   disabled={creating}
+                  autoFocus
                   style={{
                     width: "100%",
                     background: "transparent",
@@ -666,10 +812,14 @@ export default function FleetPage() {
                 />
               </div>
               <div>
-                <div style={{ fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 4 }}>
+                <label
+                  htmlFor="create-repo"
+                  style={{ fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 4, display: "block" }}
+                >
                   Repo URL
-                </div>
+                </label>
                 <input
+                  id="create-repo"
                   value={createRepo}
                   onChange={(e) => setCreateRepo(e.target.value)}
                   placeholder="https://github.com/org/repo"
@@ -689,6 +839,17 @@ export default function FleetPage() {
                   onKeyDown={(e) => { if (e.key === "Enter") handleCreateTask(); }}
                 />
               </div>
+              {estimatedCost !== null && (
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 4 }}>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4.5v1" />
+                    <path d="M8 10.5v1" />
+                    <path d="M6 8h4" />
+                  </svg>
+                  Estimated cost: <strong>${estimatedCost}</strong>
+                </div>
+              )}
             </div>
             <div
               style={{
@@ -700,7 +861,10 @@ export default function FleetPage() {
               }}
             >
               <button
-                onClick={() => setShowCreate(false)}
+                onClick={() => {
+                  setShowCreate(false);
+                  setSelectedTemplate(null);
+                }}
                 disabled={creating}
                 style={{
                   background: "transparent",

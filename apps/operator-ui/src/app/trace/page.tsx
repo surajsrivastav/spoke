@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { Task, Provenance } from "@spoke/shared";
 import { generateTaskName } from "@spoke/shared";
 import { STATUS_CONFIG, EVENT_TYPE_CONFIG } from "../lib/constants";
@@ -20,7 +20,13 @@ function useEvents(taskId: string | null) {
     fetch(`/api/tasks/${taskId}`)
       .then((r) => r.json())
       .then((data: any) => {
-        if (data.provenance) setProvenance(data.provenance);
+        const all: Provenance[] = [];
+        if (data.task_runs) {
+          for (const run of data.task_runs) {
+            if (run.provenances) all.push(...run.provenances);
+          }
+        }
+        if (all.length > 0) setProvenance(all);
       })
       .catch(() => {});
   }, [taskId]);
@@ -37,35 +43,63 @@ interface TimelineEvent {
 
 function buildEvents(task: Task, provenance: Provenance[]): TimelineEvent[] {
   if (provenance.length > 0) {
-    return provenance.flatMap<TimelineEvent>((p, i) => {
+    const sorted = [...provenance].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    const base = new Date(sorted[0].created_at);
+
+    const events: TimelineEvent[] = [];
+
+    events.push({
+      type: "TASK_STARTED",
+      detail: `Task ${task.id.slice(0, 10)} initiated by ${task.created_by}`,
+      time: "T+00:00",
+      id: "ev-start",
+    });
+
+    for (const p of sorted) {
       const t0 = new Date(p.created_at);
-      const base = new Date(provenance[0].created_at);
       const offset = Math.floor((t0.getTime() - base.getTime()) / 1000);
       const timeStr = formatOffset(offset);
 
-      if (p.type === "tool_called" && p.payload?.action === "provision_sandbox") {
-        const sid = String(p.payload.sandboxId ?? "");
-        return [{ type: "SANDBOX_CREATED" as const, detail: `Sandbox ${sid.slice(0, 8)} provisioned`, time: timeStr, id: p.id }];
+      const action = p.payload?.action as string | undefined;
+
+      if (p.type === "plan_created") {
+        events.push({ type: "PLAN_CREATED", detail: String(p.payload?.summary ?? p.payload?.plan ?? ""), time: timeStr, id: p.id });
+      } else if (p.type === "tool_called" && action === "provision_sandbox") {
+        const sid = String(p.payload?.sandboxId ?? "");
+        events.push({ type: "SANDBOX_CREATED", detail: `Sandbox ${sid.slice(0, 8)} provisioned`, time: timeStr, id: p.id });
+      } else if (p.type === "tool_called" && action === "agent_run") {
+        events.push({ type: "MODEL_CALLED", detail: `${p.tokens} tokens — $${Number(p.cost_usd).toFixed(4)}`, time: timeStr, id: p.id });
+      } else if (p.type === "tool_called") {
+        events.push({ type: "TOOL_CALLED", detail: `${action || "unknown tool"} — ${p.tokens} tokens`, time: timeStr, id: p.id });
+      } else if (p.type === "model_response") {
+        events.push({ type: "MODEL_CALLED", detail: `${p.tokens} tokens — $${Number(p.cost_usd).toFixed(4)}`, time: timeStr, id: p.id });
+      } else if (p.type === "verification_run") {
+        const errors = p.payload?.errors
+          ? Object.keys(p.payload.errors as object)
+              .filter((k) => (p.payload.errors as Record<string, boolean>)[k])
+              .join(", ")
+          : "none";
+        events.push({ type: "VERIFICATION_RAN", detail: p.payload?.passed ? "All gates passed" : `Failed: ${errors || "unknown"}`, time: timeStr, id: p.id });
+      } else if (p.type === "commit_made") {
+        events.push({ type: "GIT_COMMITTED", detail: `Branch: ${p.payload?.branch ?? ""}`, time: timeStr, id: p.id });
+      } else if (p.type === "pr_opened") {
+        events.push({ type: "PR_CREATED", detail: `${p.payload?.prUrl ?? ""}`, time: timeStr, id: p.id });
       }
-      if (p.type === "tool_called" && p.payload?.action === "agent_run") {
-        return [{ type: "MODEL_CALLED" as const, detail: `${p.tokens} tokens — $${Number(p.cost_usd).toFixed(4)}`, time: timeStr, id: p.id }];
-      }
-      if (p.type === "verification_run") {
-        const errors = p.payload?.errors ? Object.keys(p.payload.errors as object).filter(k => (p.payload.errors as Record<string, boolean>)[k]).join(", ") : "none";
-        return [{ type: "VERIFICATION_RAN" as const, detail: p.payload?.passed ? "All gates passed" : `Failed: ${errors || "unknown"}`, time: timeStr, id: p.id }];
-      }
-      if (p.type === "commit_made") {
-        return [{ type: "GIT_COMMITTED" as const, detail: `Branch: ${p.payload?.branch ?? ""}`, time: timeStr, id: p.id }];
-      }
-      if (p.type === "pr_opened") {
-        return [{ type: "PR_CREATED" as const, detail: `${p.payload?.prUrl ?? ""}`, time: timeStr, id: p.id }];
-      }
-      return [];
-    });
+    }
+
+    if (task.status === "killed") {
+      events.push({ type: "TASK_KILLED", detail: "Manual kill by operator", time: "T+00:00", id: "ev-kill" });
+    } else if (task.status === "failed") {
+      events.push({ type: "TASK_KILLED", detail: "Task failed", time: "T+00:00", id: "ev-fail" });
+    }
+
+    return events;
   }
 
   return [
-    { type: "TASK_STARTED" as const, detail: `Task ${task.id.slice(0, 10)} initiated by ${task.created_by}`, time: "T+00:00", id: "ev1" },
+    { type: "TASK_STARTED", detail: `Task ${task.id.slice(0, 10)} initiated by ${task.created_by}`, time: "T+00:00", id: "ev1" },
     ...(task.status === "killed" || task.status === "failed"
       ? [{ type: "TASK_KILLED" as const, detail: task.status === "killed" ? "Manual kill by operator" : `Task ${task.status}`, time: "T+00:00", id: "ev2" }]
       : []),
@@ -76,6 +110,9 @@ export default function TracePage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const selectedTask = tasks.find((t) => t.id === selectedId) ?? null;
   const provenance = useEvents(selectedId);
@@ -119,20 +156,92 @@ export default function TracePage() {
     return () => es.close();
   }, []);
 
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "/") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
   const isActive = selectedTask?.status === "running" || selectedTask?.status === "pending";
+
+  const filteredTasks = tasks.filter((t) => {
+    if (statusFilter !== "all" && t.status !== statusFilter) return false;
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      t.id.toLowerCase().includes(q) ||
+      t.goal.toLowerCase().includes(q) ||
+      (t.repo_url || "").toLowerCase().includes(q) ||
+      (t.created_by || "").toLowerCase().includes(q)
+    );
+  });
+
+  const filteredEvents = events.filter((ev) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return ev.type.toLowerCase().includes(q) || ev.detail.toLowerCase().includes(q);
+  });
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: "var(--text-sub)", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text-primary)", marginBottom: 4 }}>
-          Trace
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div>
+          <div style={{ fontSize: "var(--text-sub)", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text-primary)", marginBottom: 2 }}>
+            Trace
+          </div>
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", fontFamily: "Geist Mono, monospace" }}>
+            {tasks.length} tasks · {provenance.length} provenance events
+          </div>
         </div>
-        <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", fontFamily: "Geist Mono, monospace" }}>
-          {tasks.length} tasks · {provenance.length} provenance events
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 6,
+              padding: "4px 8px",
+              fontSize: "var(--text-xs)",
+              color: "var(--text-primary)",
+              outline: "none",
+              fontFamily: "inherit",
+            }}
+          >
+            <option value="all">All statuses</option>
+            <option value="running">Running</option>
+            <option value="pending">Pending</option>
+            <option value="succeeded">Completed</option>
+            <option value="failed">Failed</option>
+            <option value="killed">Killed</option>
+          </select>
+          <input
+            ref={searchRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder='Search traces... ("/")'
+            style={{
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 6,
+              padding: "4px 10px",
+              fontSize: "var(--text-xs)",
+              color: "var(--text-primary)",
+              outline: "none",
+              width: 180,
+              fontFamily: "inherit",
+            }}
+          />
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 16, height: "calc(100vh - 140px)" }}>
+      <div style={{ display: "flex", gap: 16, height: "calc(100vh - 160px)" }}>
         {/* Task selector sidebar */}
         <div
           style={{
@@ -146,12 +255,11 @@ export default function TracePage() {
         >
           {loading ? (
             <div style={{ padding: 16, fontSize: "var(--text-sm)", color: "var(--text-tertiary)" }}>Loading...</div>
-          ) : tasks.length === 0 ? (
-            <div style={{ padding: 16, fontSize: "var(--text-sm)", color: "var(--text-tertiary)" }}>No tasks</div>
+          ) : filteredTasks.length === 0 ? (
+            <div style={{ padding: 16, fontSize: "var(--text-sm)", color: "var(--text-tertiary)" }}>No matching tasks</div>
           ) : (
-            tasks.map((task) => {
+            filteredTasks.map((task) => {
               const isSel = selectedId === task.id;
-              const cfg = STATUS_CONFIG[task.status];
               return (
                 <div
                   key={task.id}
@@ -198,7 +306,10 @@ export default function TracePage() {
           {!selectedTask ? (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 32, color: "var(--text-tertiary)", marginBottom: 12 }}>◎</div>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 12px", color: "var(--text-tertiary)" }}>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
                 <div style={{ fontSize: "var(--text-h3)", color: "var(--text-secondary)", fontWeight: 600 }}>
                   Select a task to view its trace
                 </div>
@@ -232,17 +343,24 @@ export default function TracePage() {
 
               {/* Provenance timeline */}
               <div style={{ flex: 1, overflow: "auto", padding: "var(--sp-5)" }}>
-                <div style={{ fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 16 }}>
-                  Provenance ({events.length} events)
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div style={{ fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)" }}>
+                    Provenance ({filteredEvents.length}/{events.length} events)
+                  </div>
+                  {searchQuery && events.length > filteredEvents.length && (
+                    <span style={{ fontSize: "var(--text-xs)", color: "var(--status-warning)" }}>
+                      {events.length - filteredEvents.length} hidden by filter
+                    </span>
+                  )}
                 </div>
 
                 <div style={{ position: "relative" }}>
                   <div style={{ position: "absolute", left: 9, top: 10, bottom: 10, width: 1, background: "var(--border-subtle)" }} />
 
-                  {events.map((ev, i) => {
+                  {filteredEvents.map((ev, i) => {
                     const evCfg = EVENT_TYPE_CONFIG[ev.type];
                     return (
-                      <div key={ev.id} style={{ position: "relative", paddingLeft: 28, paddingBottom: i < events.length - 1 ? 16 : 0 }}>
+                      <div key={ev.id} style={{ position: "relative", paddingLeft: 28, paddingBottom: i < filteredEvents.length - 1 ? 16 : 0 }}>
                         <div style={{ position: "absolute", left: 0, top: 3, width: 20, height: 20, borderRadius: "50%", background: "var(--bg-surface)", border: `1px solid ${evCfg?.color || "var(--border-default)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: evCfg?.color || "var(--text-tertiary)" }}>
                           {evCfg?.icon || "•"}
                         </div>
@@ -263,9 +381,9 @@ export default function TracePage() {
                     );
                   })}
 
-                  {events.length === 0 && (
+                  {filteredEvents.length === 0 && (
                     <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-tertiary)", fontSize: "var(--text-sm)" }}>
-                      No provenance events recorded yet.
+                      {searchQuery ? "No events match your search." : "No provenance events recorded yet."}
                     </div>
                   )}
                 </div>

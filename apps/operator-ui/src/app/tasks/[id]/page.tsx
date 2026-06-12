@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { Task, TaskRun } from "@spoke/shared";
+import { STATUS_CONFIG } from "../../lib/constants";
+import { StatusBadge, StatusDot } from "../../components/lib/StatusBadge";
 import ProvenanceTree from "../../components/ProvenanceTree";
 
 interface TaskDetail extends Task {
@@ -9,17 +11,6 @@ interface TaskDetail extends Task {
     provenances: import("@spoke/shared").Provenance[];
   })[];
 }
-
-const runStatusColors: Record<string, string> = {
-  provisioning: "bg-gray-100 text-gray-700",
-  planning: "bg-blue-100 text-blue-700",
-  executing: "bg-indigo-100 text-indigo-700",
-  verifying: "bg-purple-100 text-purple-700",
-  pushing: "bg-yellow-100 text-yellow-700",
-  completed: "bg-green-100 text-green-700",
-  failed: "bg-red-100 text-red-700",
-  killed: "bg-orange-100 text-orange-700",
-};
 
 export default function TaskDetailPage({
   params,
@@ -44,129 +35,196 @@ export default function TaskDetailPage({
       }
     }
     load();
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/tasks/${params.id}`);
+        if (res.ok) {
+          const updated = await res.json();
+          setTask(updated);
+        }
+      } catch {}
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [params.id]);
+
+  const isActive = task?.status === "running" || task?.status === "pending";
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">Loading task...</p>
+      <div style={{ display: "flex", minHeight: "60vh", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)" }}>Loading task...</div>
       </div>
     );
   }
 
   if (!task) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-red-500">Task not found.</p>
+      <div style={{ display: "flex", minHeight: "60vh", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontSize: "var(--text-sm)", color: "var(--status-failed)" }}>Task not found.</div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <a href="/" className="text-sm text-blue-600 hover:underline">
-        &larr; Back to fleet
+    <div style={{ maxWidth: 800, margin: "0 auto", position: "relative" }}>
+      <a
+        href="/"
+        style={{
+          fontSize: "var(--text-sm)",
+          color: "var(--accent-primary)",
+          textDecoration: "none",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          marginBottom: 16,
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10 12L6 8l4-4" />
+        </svg>
+        Back to fleet
       </a>
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white p-6">
-        <div className="mb-4 flex items-start justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">{task.goal}</h2>
-            <p className="mt-1 font-mono text-xs text-gray-400">{task.id}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-800">
-              {task.status}
+      {/* Sticky kill header */}
+      {isActive && (
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
+            background: "var(--bg-base)",
+            borderBottom: "1px solid var(--border-subtle)",
+            padding: "8px 0",
+            marginBottom: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <StatusDot status={task.status} pulsing />
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--status-running)", fontFamily: "Geist Mono, monospace" }}>
+              Agent is running
             </span>
-            {task.status === "running" && (
-              <button
-                onClick={async () => {
-                  if (killing) return;
-                  setKilling(true);
-                  try {
-                    const res = await fetch(`/api/tasks/${task.id}/kill`, {
-                      method: "POST",
-                    });
-                    if (res.ok) {
-                      setTask({ ...task, status: "killed" });
-                    }
-                  } catch {
-                    console.error("Failed to kill task");
-                  } finally {
-                    setKilling(false);
-                  }
-                }}
-                disabled={killing}
-                className="rounded-full bg-orange-500 px-3 py-1 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
-              >
-                {killing ? "Killing..." : "Kill"}
-              </button>
-            )}
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--status-running)", animation: "ping 1.5s infinite" }} />
           </div>
+          <button
+            onClick={async () => {
+              if (killing) return;
+              setKilling(true);
+              try {
+                const res = await fetch(`/api/tasks/${task.id}/kill`, { method: "POST" });
+                if (res.ok) setTask({ ...task, status: "killed" });
+              } catch {
+                console.error("Failed to kill task");
+              } finally {
+                setKilling(false);
+              }
+            }}
+            disabled={killing}
+            style={{
+              background: "var(--status-failed)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              padding: "6px 16px",
+              fontSize: "var(--text-ui)",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              opacity: killing ? 0.6 : 1,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="4" y1="4" x2="12" y2="12" />
+              <line x1="12" y1="4" x2="4" y2="12" />
+            </svg>
+            {killing ? "Killing..." : "Kill Task"}
+          </button>
+        </div>
+      )}
+
+      {/* Task info card */}
+      <div
+        style={{
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: 8,
+          padding: "var(--sp-5) var(--sp-6)",
+          marginBottom: 24,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1.3 }}>
+              {task.goal}
+            </h2>
+            <p style={{ fontFamily: "Geist Mono, monospace", fontSize: "var(--text-sm)", color: "var(--text-tertiary)", margin: "4px 0 0" }}>
+              {task.id}
+            </p>
+          </div>
+          <StatusBadge status={task.status} />
         </div>
 
-        <div className="mb-4 grid grid-cols-2 gap-4 text-sm">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, fontSize: "var(--text-sm)" }}>
           <div>
-            <span className="text-gray-500">Repo:</span>{" "}
-            <span className="text-gray-900">{task.repo_url}</span>
+            <span style={{ color: "var(--text-tertiary)" }}>Repo: </span>
+            <span style={{ color: "var(--text-primary)" }}>{task.repo_url}</span>
           </div>
           <div>
-            <span className="text-gray-500">Branch:</span>{" "}
-            <span className="text-gray-900">{task.branch_target}</span>
+            <span style={{ color: "var(--text-tertiary)" }}>Branch: </span>
+            <span style={{ color: "var(--text-primary)" }}>{task.branch_target}</span>
           </div>
           <div>
-            <span className="text-gray-500">Created:</span>{" "}
-            <span className="text-gray-900">
-              {new Date(task.created_at).toLocaleString()}
-            </span>
+            <span style={{ color: "var(--text-tertiary)" }}>Created: </span>
+            <span style={{ color: "var(--text-primary)" }}>{new Date(task.created_at).toLocaleString()}</span>
           </div>
           <div>
-            <span className="text-gray-500">Cost cap:</span>{" "}
-            <span className="text-gray-900">
-              ${Number(task.cost_cap_usd).toFixed(2)}
-            </span>
+            <span style={{ color: "var(--text-tertiary)" }}>Cost cap: </span>
+            <span style={{ color: "var(--text-primary)" }}>${Number(task.cost_cap_usd).toFixed(2)}</span>
           </div>
         </div>
       </div>
 
-      <h3 className="mb-4 mt-8 text-lg font-semibold text-gray-900">
+      <h3 style={{ fontSize: "var(--text-sub)", fontWeight: 600, color: "var(--text-primary)", marginBottom: 12, letterSpacing: "-0.02em" }}>
         Task Runs ({task.task_runs.length})
       </h3>
 
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {task.task_runs.map((run) => (
           <div
             key={run.id}
-            className="rounded-lg border border-gray-200 bg-white p-4"
+            style={{
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 8,
+              padding: "var(--sp-4)",
+            }}
           >
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-primary)" }}>
                 Attempt #{run.attempt}
               </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                  runStatusColors[run.status] ?? "bg-gray-100 text-gray-700"
-                }`}
-              >
-                {run.status}
-              </span>
+              <StatusBadge status={run.status as any} />
             </div>
 
-            <div className="mb-3 grid grid-cols-3 gap-3 text-xs text-gray-500">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, fontSize: "var(--text-sm)", color: "var(--text-tertiary)", marginBottom: 12 }}>
               <div>
-                Cost: <span className="font-medium text-gray-700">${Number(run.total_cost_usd).toFixed(4)}</span>
+                Cost: <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>${Number(run.total_cost_usd).toFixed(4)}</span>
               </div>
               <div>
-                Tokens: <span className="font-medium text-gray-700">{run.total_tokens}</span>
+                Tokens: <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{run.total_tokens}</span>
               </div>
               <div>
                 Duration:{" "}
-                <span className="font-medium text-gray-700">
+                <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
                   {run.ended_at
                     ? `${Math.round(
-                        (new Date(run.ended_at).getTime() -
-                          new Date(run.started_at).getTime()) /
-                          1000,
+                        (new Date(run.ended_at).getTime() - new Date(run.started_at).getTime()) / 1000
                       )}s`
                     : "running..."}
                 </span>
@@ -179,7 +237,7 @@ export default function TaskDetailPage({
       </div>
 
       {task.task_runs.length === 0 && (
-        <p className="text-sm text-gray-400">No task runs yet.</p>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)" }}>No task runs yet.</p>
       )}
     </div>
   );
