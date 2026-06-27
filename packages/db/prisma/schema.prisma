@@ -14,6 +14,9 @@ model Task {
   branch_target   String    @default("main")
   status          String
   cost_cap_usd    Decimal   @default(5.00)
+  max_agents      Int       @default(5)
+  risk_level      String    @default("medium")
+  strategy        String    @default("single-agent")
   created_by      String
   created_at      DateTime  @default(now())
   updated_at      DateTime  @updatedAt

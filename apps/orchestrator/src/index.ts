@@ -3,6 +3,35 @@ import { NativeConnection, Worker } from '@temporalio/worker';
 import * as activities from './activities/index.js';
 import { env } from '@spoke/shared';
 
+export async function startSpokeIntent(
+  taskId: string,
+  goal: string,
+  repoUrl: string,
+  client?: Client,
+): Promise<string> {
+  const ownConnection = !client;
+  let connection: NativeConnection | undefined;
+
+  if (!client) {
+    connection = await NativeConnection.connect({ address: env.TEMPORAL_ADDRESS });
+    client = new Client({ connection });
+  }
+
+  const workflowId = `spoke-intent-${taskId}`;
+
+  await client.workflow.start('spokeIntentWorkflow', {
+    args: [{ taskId, goal, repoUrl }],
+    taskQueue: 'spoke-task-queue',
+    workflowId,
+  });
+
+  if (ownConnection && connection) {
+    await connection.close();
+  }
+  return workflowId;
+}
+
+// Kept for backward compatibility — starts the single-agent workflow directly.
 export async function startAgentTask(
   taskId: string,
   goal: string,
@@ -42,8 +71,8 @@ async function pollPendingTasks(client: Client) {
 
       for (const task of pending) {
         try {
-          console.log(`[poller] starting workflow for task ${task.id}: ${task.goal.slice(0, 60)}`);
-          await startAgentTask(task.id, task.goal, task.repo_url, client);
+          console.log(`[poller] starting spoke-intent workflow for task ${task.id}: ${task.goal.slice(0, 60)}`);
+          await startSpokeIntent(task.id, task.goal, task.repo_url, client);
           console.log(`[poller] workflow started for task ${task.id}`);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -70,7 +99,7 @@ async function run() {
 
   const worker = await Worker.create({
     connection,
-    workflowsPath: new URL('./workflows/agent-task.js', import.meta.url).pathname,
+    workflowsPath: new URL('./workflows/index.js', import.meta.url).pathname,
     activities,
     taskQueue: 'spoke-task-queue',
   });

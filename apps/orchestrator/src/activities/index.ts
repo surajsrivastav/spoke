@@ -1,6 +1,6 @@
 import { prisma } from '@spoke/db';
-import type { TaskStatus } from '@spoke/shared';
-import { env } from '@spoke/shared';
+import type { TaskStatus, AgentRunResult, ExecutionPlan } from '@spoke/shared';
+import { env, parseIntent, createPlan } from '@spoke/shared';
 import { randomUUID } from 'node:crypto';
 import {
   provisionSandbox as realProvisionSandbox,
@@ -183,4 +183,93 @@ export async function destroySandbox(sandboxId: string): Promise<{ ok: true }> {
   console.log(`[activity] destroySandbox: sandboxId=${sandboxId}`);
   await realDestroySandbox(sandboxId);
   return { ok: true };
+}
+
+export async function createExecutionPlan(
+  taskId: string,
+  goal: string,
+  repoUrl: string,
+): Promise<ExecutionPlan> {
+  console.log(`[activity] createExecutionPlan: taskId=${taskId}`);
+
+  const task = await prisma.task.findUniqueOrThrow({ where: { id: taskId } });
+  const maxAgents = task.max_agents ?? 5;
+
+  const intent = parseIntent(taskId, goal, repoUrl, {
+    max_agents: maxAgents,
+    budget: Number(task.cost_cap_usd),
+  });
+  const plan = createPlan(intent);
+
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { strategy: plan.strategy },
+  });
+
+  const t0 = Date.now();
+  const taskRuns = await prisma.taskRun.findMany({ where: { task_id: taskId }, take: 1 });
+  if (taskRuns.length > 0) {
+    await writeProvenance({
+      taskRunId: taskRuns[0].id,
+      type: 'plan_created',
+      payload: { strategy: plan.strategy, agent_count: plan.agent_count, rationale: plan.rationale },
+      costUsd: 0,
+      tokens: 0,
+      durationMs: Date.now() - t0,
+    });
+  }
+
+  console.log(`[activity] plan: strategy=${plan.strategy}, agents=${plan.agent_count} — ${plan.rationale}`);
+  return plan;
+}
+
+export async function getDiffSize(sandboxId: string): Promise<{ size: number }> {
+  console.log(`[activity] getDiffSize: sandboxId=${sandboxId}`);
+  try {
+    const result = await executeShell(sandboxId, 'cd /repo && git diff HEAD | wc -l');
+    const size = parseInt(String(result).trim(), 10) || 0;
+    return { size };
+  } catch {
+    return { size: 0 };
+  }
+}
+
+export async function aggregateResults(
+  taskId: string,
+  results: AgentRunResult[],
+): Promise<AgentRunResult | null> {
+  console.log(`[activity] aggregateResults: taskId=${taskId}, candidates=${results.length}`);
+
+  const passing = results.filter(r => r.passed);
+
+  let winner: AgentRunResult | null = null;
+  let reason: string;
+
+  if (passing.length === 0) {
+    reason = 'all agents failed verification';
+  } else if (passing.length === 1) {
+    winner = passing[0];
+    reason = 'single passing agent accepted';
+  } else {
+    winner = passing.reduce((best, r) =>
+      r.confidence > best.confidence ? r : best,
+    );
+    reason = `selected highest confidence (${winner.confidence.toFixed(2)}) from ${passing.length} passing agents`;
+  }
+
+  console.log(`[activity] aggregation decision: ${reason}${winner ? `, winner=${winner.taskRunId}` : ''}`);
+
+  const taskRuns = await prisma.taskRun.findMany({ where: { task_id: taskId }, take: 1 });
+  if (taskRuns.length > 0) {
+    await writeProvenance({
+      taskRunId: taskRuns[0].id,
+      type: 'plan_created',
+      payload: { event: 'aggregation', reason, winner_run_id: winner?.taskRunId ?? null, total_candidates: results.length, passing_count: passing.length },
+      costUsd: 0,
+      tokens: 0,
+      durationMs: 0,
+    });
+  }
+
+  return winner;
 }

@@ -1,5 +1,36 @@
 export type TaskStatus = 'pending' | 'running' | 'succeeded' | 'failed' | 'killed';
 
+export type RiskLevel = 'low' | 'medium' | 'high';
+
+export type AgentStrategy = 'single-agent' | 'dual-agent' | 'test-first';
+
+export type IntentConstraints = {
+  max_agents: number;
+  budget: number;
+  risk_level: RiskLevel;
+};
+
+export type IntentPayload = {
+  intent_id: string;
+  description: string;
+  repo: string;
+  constraints: IntentConstraints;
+};
+
+export type ExecutionPlan = {
+  strategy: AgentStrategy;
+  agent_count: number;
+  rationale: string;
+};
+
+export type AgentRunResult = {
+  taskRunId: string;
+  sandboxId: string;
+  passed: boolean;
+  confidence: number;
+  diffSize: number;
+};
+
 export type Task = {
   id: string;
   goal: string;
