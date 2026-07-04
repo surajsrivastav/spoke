@@ -307,7 +307,7 @@ describe('runAgentLoop', () => {
 
     const callArgs = mockCreateMessage.mock.calls[0];
     expect(callArgs[0]).toBe('claude-sonnet-4-20250514');
-    expect(callArgs[1]).toBe(4096);
+    expect(callArgs[1]).toBe(16384);
     expect(callArgs[3]).toEqual(toolDefinitions);
     expect(callArgs[2]).toHaveLength(1);
     expect(callArgs[2][0].role).toBe('user');

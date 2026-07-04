@@ -66,12 +66,13 @@ describe('github', () => {
         .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
         .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
         .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })  // status --porcelain (empty)
+        .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })  // rev-list --count main..HEAD
         .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })  // remote set-url
         .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 }); // push
 
       const result = await pushBranch('test-sid', repoUrl, 'noop');
 
-      expect(executeGit).toHaveBeenCalledTimes(7);  // no commit call
+      expect(executeGit).toHaveBeenCalledTimes(8);  // no commit call
       expect(result).toEqual({ branch: 'spoke/noop' });
     });
 
@@ -133,12 +134,13 @@ describe('github', () => {
         .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
         .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
         .mockResolvedValueOnce({ stdout: '\n', stderr: '', exitCode: 0 })  // whitespace-only status
+        .mockResolvedValueOnce({ stdout: '3', stderr: '', exitCode: 0 })    // rev-list --count main..HEAD
         .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })     // remote set-url
         .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 });    // push
 
       const result = await pushBranch('test-sid', repoUrl, 'whitespace check');
 
-      expect(executeGit).toHaveBeenCalledTimes(7);  // no commit call
+      expect(executeGit).toHaveBeenCalledTimes(8);  // no commit call
       expect(result).toEqual({ branch: 'spoke/whitespace-check' });
     });
   });

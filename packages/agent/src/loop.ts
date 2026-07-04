@@ -60,6 +60,7 @@ const toolDefinitions = [
 
 function extractJsonToolCalls(text: string): ToolUseBlock[] {
   const results: ToolUseBlock[] = [];
+  const seen = new Set<string>();
   const knownTools = new Set(toolDefinitions.map(t => t.name));
   let callIdCounter = 0;
 
@@ -100,18 +101,21 @@ function extractJsonToolCalls(text: string): ToolUseBlock[] {
       }
     }
 
-    const parsed = tryParse(snippet);
+    const parsed = tryParse(snippet) as Record<string, unknown> | null;
     if (parsed) {
-      const name = parsed.name || parsed.function?.name;
-      const rawInput = parsed.input || parsed.arguments || parsed.function?.arguments || {};
-      const input = typeof rawInput === 'string' ? tryParse(rawInput) ?? rawInput : rawInput;
+      const fn = parsed.function as Record<string, unknown> | undefined;
+      const name = String(parsed.name || fn?.name || '');
+      const rawInput = parsed.input || parsed.arguments || fn?.arguments || {};
+      const input = typeof rawInput === 'string' ? (tryParse(rawInput) as Record<string, unknown> ?? {}) : rawInput;
       if (name && knownTools.has(name) && typeof input === 'object' && input !== null) {
-        if (!results.some(r => r.name === name && JSON.stringify(r.input) === JSON.stringify(input))) {
+        const key = `${name}:${JSON.stringify(input)}`;
+        if (!seen.has(key)) {
+          seen.add(key);
           results.push({
             type: 'tool_use',
             id: `call_${callIdCounter++}`,
             name,
-            input,
+            input: input as Record<string, unknown>,
           });
         }
       }
