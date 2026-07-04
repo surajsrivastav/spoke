@@ -26,13 +26,30 @@ export async function pushBranch(
   const status = await executeGit(sandboxId, ['-C', '/repo', 'status', '--porcelain']);
   if (status.stdout.trim()) {
     await executeGit(sandboxId, ['-C', '/repo', 'commit', '-m', `Spoke: ${goal}`]);
+  } else {
+    const ahead = await executeGit(sandboxId, ['-C', '/repo', 'rev-list', '--count', 'main..HEAD']);
+    if (ahead.stdout.trim() === '0') {
+      throw new Error('No changes detected — agent did not modify any files');
+    }
   }
 
-  const remote = repoUrl.replace('https://', `https://${env.GH_TOKEN}@`);
+  const fullUrl = normalizeRepoUrl(repoUrl);
+  const remote = fullUrl.replace('https://', `https://${env.GH_TOKEN}@`);
   await executeGit(sandboxId, ['-C', '/repo', 'remote', 'set-url', 'origin', remote]);
   await executeGit(sandboxId, ['-C', '/repo', 'push', 'origin', branch]);
 
   return { branch };
+}
+
+function normalizeRepoUrl(repoUrl: string): string {
+  if (repoUrl.startsWith('http://') || repoUrl.startsWith('https://') || repoUrl.startsWith('git@')) {
+    return repoUrl;
+  }
+  const parts = repoUrl.split('/');
+  if (parts.length === 2) {
+    return `https://github.com/${parts[0]}/${parts[1]}.git`;
+  }
+  return repoUrl;
 }
 
 export async function createPr(
@@ -41,7 +58,8 @@ export async function createPr(
   goal: string,
   description?: string,
 ): Promise<{ prUrl: string; prNumber: number }> {
-  const match = repoUrl.match(/github\.com[\/:]([\w.-]+)\/([\w.-]+)(\.git)?$/);
+  const fullUrl = normalizeRepoUrl(repoUrl);
+  const match = fullUrl.match(/github\.com[\/:]([\w.-]+)\/([\w.-]+)(\.git)?$/);
   if (!match) {
     throw new Error(`Invalid GitHub repo URL: ${repoUrl}`);
   }

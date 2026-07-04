@@ -65,15 +65,15 @@ function extractJsonToolCalls(text: string): ToolUseBlock[] {
 
   let pos = 0;
   while (pos < text.length) {
-    const startIdx = text.indexOf('{"name"', pos);
-    if (startIdx === -1) break;
+    const objStart = text.indexOf('{', pos);
+    if (objStart === -1) break;
 
     let depth = 0;
     let inString = false;
     let escape = false;
     let endIdx = -1;
 
-    for (let i = startIdx; i < text.length; i++) {
+    for (let i = objStart; i < text.length; i++) {
       const ch = text[i];
       if (escape) { escape = false; continue; }
       if (ch === '\\') { escape = true; continue; }
@@ -85,24 +85,36 @@ function extractJsonToolCalls(text: string): ToolUseBlock[] {
 
     if (endIdx === -1) break;
 
-    const snippet = text.slice(startIdx, endIdx);
+    const snippet = text.slice(objStart, endIdx);
     pos = endIdx;
 
-    try {
-      const parsed = JSON.parse(snippet);
+    function tryParse(raw: string): Record<string, unknown> | null {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        const fixed = raw.replace(/\\([^"\\/bfnrtu])/g, '$1');
+        if (fixed !== raw) {
+          try { return JSON.parse(fixed); } catch { return null; }
+        }
+        return null;
+      }
+    }
+
+    const parsed = tryParse(snippet);
+    if (parsed) {
       const name = parsed.name || parsed.function?.name;
       const rawInput = parsed.input || parsed.arguments || parsed.function?.arguments || {};
-      const input = typeof rawInput === 'string' ? JSON.parse(rawInput) : rawInput;
-      if (name && knownTools.has(name) && typeof input === 'object') {
-        results.push({
-          type: 'tool_use',
-          id: `call_${callIdCounter++}`,
-          name,
-          input,
-        });
+      const input = typeof rawInput === 'string' ? tryParse(rawInput) ?? rawInput : rawInput;
+      if (name && knownTools.has(name) && typeof input === 'object' && input !== null) {
+        if (!results.some(r => r.name === name && JSON.stringify(r.input) === JSON.stringify(input))) {
+          results.push({
+            type: 'tool_use',
+            id: `call_${callIdCounter++}`,
+            name,
+            input,
+          });
+        }
       }
-    } catch {
-      // skip malformed JSON
     }
   }
 
@@ -137,7 +149,19 @@ export async function runAgentLoop(
 
   messages.push({
     role: 'user',
-    content: `The repository is cloned to /repo/. All file paths must be absolute (e.g. /repo/index.js).\n\n${goal}`,
+    content: `You are a senior software engineer. Your goal is to implement the requested changes.
+
+Available tools:
+- shell: run shell commands (always cd /repo first)
+- read_file: read any file (MUST use this before editing)
+- write_file: write a file with new content. PREFER this for making code changes.
+- git: git operations
+
+The repository is cloned to /repo/. All file paths must be absolute (e.g. /repo/index.js).
+
+RULE: You MUST use write_file to make changes. Read the file first, then use write_file to write the modified version.
+
+${goal}`,
   });
 
   const costCap = env.DEFAULT_COST_CAP_USD;
@@ -155,7 +179,7 @@ export async function runAgentLoop(
 
     const response = await provider.createMessage(
       env.DEFAULT_MODEL,
-      4096,
+      env.DEFAULT_MAX_TOKENS || 16384,
       messages,
       toolDefinitions,
     );
@@ -165,20 +189,24 @@ export async function runAgentLoop(
 
     let toolCalls = response.content.filter((b): b is ToolUseBlock => b.type === 'tool_use');
 
-    if (toolCalls.length === 0) {
-      const text = response.content
-        .filter((b): b is TextBlock => b.type === 'text')
-        .map(b => b.text)
-        .join('\n');
+    const text = response.content
+      .filter((b): b is TextBlock => b.type === 'text')
+      .map(b => b.text)
+      .join('\n');
 
+    if (toolCalls.length > 0) {
+      console.log('[agent] native tool calls:', toolCalls.map(t => `${t.name}(${JSON.stringify(t.input).slice(0, 100)})`).join(', '));
+    } else {
       const jsonToolCalls = extractJsonToolCalls(text);
       if (jsonToolCalls.length > 0) {
+        console.log('[agent] JSON fallback tool calls:', jsonToolCalls.map(t => `${t.name}(${JSON.stringify(t.input).slice(0, 100)})`).join(', '));
         toolCalls = jsonToolCalls;
         response.content = [
           ...response.content.filter((b): b is TextBlock => b.type === 'text'),
           ...jsonToolCalls,
         ];
       } else {
+        console.log('[agent] no tool calls found, text:', text.slice(0, 500));
         return { result: text, totalTokens, totalCost };
       }
     }
@@ -215,6 +243,10 @@ export async function runAgentLoop(
 
     messages.push({ role: 'assistant', content: response.content as (TextBlock | ToolUseBlock)[] });
     messages.push({ role: 'user', content: toolResults });
+    messages.push({
+      role: 'user',
+      content: 'If you have enough information to make the code changes, use write_file or shell+sed to implement the fix now.',
+    });
   }
 
   return {

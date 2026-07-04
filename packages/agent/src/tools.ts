@@ -46,6 +46,12 @@ export async function executeReadFile(sandboxId: string, path: string): Promise<
   const result = await executeShell(sandboxId, `cat ${path}`);
 
   if (result.exitCode === 0) {
+    const maxLen = 3000;
+    if (result.stdout.length > maxLen) {
+      const head = result.stdout.slice(0, Math.floor(maxLen / 2));
+      const tail = result.stdout.slice(-Math.floor(maxLen / 2));
+      result.stdout = `${head}\n\n... [truncated ${result.stdout.length - maxLen} bytes] ...\n\n${tail}`;
+    }
     console.log(`[sandbox:exec] read_file ok: sandboxId=${sandboxId} path=${path} size=${result.stdout.length} durationMs=${Date.now() - t0}`);
   } else {
     console.error(`[sandbox:exec] read_file fail: sandboxId=${sandboxId} path=${path} durationMs=${Date.now() - t0}`);

@@ -46,9 +46,10 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<{ ok: tr
 
     let verificationPassed = false;
     let prevErrors: Record<string, unknown> | undefined;
+    let agentResult: { result: string } = { result: '' };
 
     for (let attempt = 0; attempt < 3; attempt++) {
-      await runAgent(sandboxId, goal, provisionResult.taskRunId, prevErrors);
+      agentResult = await runAgent(sandboxId, goal, provisionResult.taskRunId, prevErrors);
 
       if (await checkCancelled(taskId)) return { ok: true };
 
@@ -73,7 +74,7 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<{ ok: tr
 
     if (await checkCancelled(taskId)) return { ok: true };
 
-    await createPr(repoUrl, branch, goal, provisionResult.taskRunId, taskId);
+    await createPr(repoUrl, branch, goal, provisionResult.taskRunId, taskId, agentResult.result);
 
     if (await checkCancelled(taskId)) return { ok: true };
 

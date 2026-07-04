@@ -71,7 +71,7 @@ describe('agentTaskWorkflow', () => {
       expect(mockActivities.runAgent).toHaveBeenCalledWith('sandbox-1', 'fix bug', 'run-1', undefined);
       expect(mockActivities.verify).toHaveBeenCalledWith('sandbox-1', 'run-1');
       expect(mockActivities.pushBranch).toHaveBeenCalledWith('sandbox-1', 'https://github.com/org/repo', 'fix bug', 'run-1', 'task-1');
-      expect(mockActivities.createPr).toHaveBeenCalledWith('https://github.com/org/repo', 'fix-bug-123', 'fix bug', 'run-1', 'task-1');
+      expect(mockActivities.createPr).toHaveBeenCalledWith('https://github.com/org/repo', 'fix-bug-123', 'fix bug', 'run-1', 'task-1', 'agent-result');
       expect(mockActivities.updateTaskStatus).toHaveBeenLastCalledWith('task-1', 'succeeded');
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-1');
       expect(result).toEqual({ ok: true });

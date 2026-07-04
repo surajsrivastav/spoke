@@ -58,11 +58,23 @@ export async function provisionSandbox(taskId: string): Promise<{ sandboxId: str
   return { sandboxId, taskRunId };
 }
 
+function normalizeRepoUrl(repoUrl: string): string {
+  if (repoUrl.startsWith('http://') || repoUrl.startsWith('https://') || repoUrl.startsWith('git@')) {
+    return repoUrl;
+  }
+  const parts = repoUrl.split('/');
+  if (parts.length === 2) {
+    return `https://github.com/${parts[0]}/${parts[1]}.git`;
+  }
+  return repoUrl;
+}
+
 export async function cloneRepo(sandboxId: string, repoUrl: string, taskRunId: string): Promise<{ ok: true }> {
   console.log(`[activity] cloneRepo: sandboxId=${sandboxId}, taskRunId=${taskRunId}`);
-  const authUrl = repoUrl.replace('https://', `https://oauth2:${env.GH_TOKEN}@`);
+  const fullUrl = normalizeRepoUrl(repoUrl);
+  const authUrl = fullUrl.replace('https://', `https://oauth2:${env.GH_TOKEN}@`);
   await executeShell(sandboxId, `git clone ${authUrl} /repo`);
-  await executeShell(sandboxId, 'cd /repo && git remote set-url origin ' + repoUrl);
+  await executeShell(sandboxId, 'cd /repo && git remote set-url origin ' + fullUrl);
   await executeShell(sandboxId, 'cd /repo && git config user.name "Spoke Agent" && git config user.email "spoke@agent.dev"');
   return { ok: true };
 }

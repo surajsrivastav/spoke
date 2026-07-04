@@ -67,7 +67,7 @@ describe('F-02: Sandboxed Agent Execution — Acceptance Criteria', () => {
       expect(mockActivities.runAgent).toHaveBeenCalledWith('sandbox-abc', 'add JWT auth to Express API', 'run-1', undefined);
       expect(mockActivities.verify).toHaveBeenCalledWith('sandbox-abc', 'run-1');
       expect(mockActivities.pushBranch).toHaveBeenCalledWith('sandbox-abc', 'https://github.com/org/repo', 'add JWT auth to Express API', 'run-1', 'task-01');
-      expect(mockActivities.createPr).toHaveBeenCalledWith('https://github.com/org/repo', 'feat/jwt-auth-abc', 'add JWT auth to Express API', 'run-1', 'task-01');
+      expect(mockActivities.createPr).toHaveBeenCalledWith('https://github.com/org/repo', 'feat/jwt-auth-abc', 'add JWT auth to Express API', 'run-1', 'task-01', 'implemented JWT auth');
       expect(mockActivities.updateTaskStatus).toHaveBeenCalledWith('task-01', 'succeeded');
       expect(mockActivities.destroySandbox).toHaveBeenCalledWith('sandbox-abc');
       expect(result).toEqual({ ok: true });

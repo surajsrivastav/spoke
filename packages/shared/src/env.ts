@@ -30,4 +30,7 @@ export const env = {
 
   // Cost cap
   DEFAULT_COST_CAP_USD: Number(process.env.DEFAULT_COST_CAP_USD ?? '5.00'),
+
+  // Agent loop
+  DEFAULT_MAX_TOKENS: Number(process.env.DEFAULT_MAX_TOKENS ?? '16384'),
 };
