@@ -1,7 +1,7 @@
 import { proxyActivities, defineSignal, setHandler } from '@temporalio/workflow';
 import type * as activities from '../activities/index.js';
 
-const { updateTaskStatus, provisionSandbox, cloneRepo, runAgent, verify, pushBranch, createPr, destroySandbox } =
+const { updateTaskStatus, provisionSandbox, ensureRepoExists, cloneRepo, runAgent, verify, pushBranch, createPr, destroySandbox } =
   proxyActivities<typeof activities>({
     startToCloseTimeout: '5 minutes',
     retry: { initialInterval: '10 seconds', maximumAttempts: 3 },
@@ -34,6 +34,10 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<{ ok: tr
 
   try {
     await updateTaskStatus(taskId, 'running');
+
+    if (await checkCancelled(taskId)) return { ok: true };
+
+    await ensureRepoExists(repoUrl);
 
     if (await checkCancelled(taskId)) return { ok: true };
 
