@@ -31,6 +31,34 @@ export async function startAgentTask(
   return workflowId;
 }
 
+export async function startOrchestratorTask(
+  taskId: string,
+  goal: string,
+  repoUrl: string,
+  client?: Client,
+): Promise<string> {
+  const ownConnection = !client;
+  let connection: NativeConnection | undefined;
+
+  if (!client) {
+    connection = await NativeConnection.connect({ address: env.TEMPORAL_ADDRESS });
+    client = new Client({ connection });
+  }
+
+  const workflowId = `orchestrator-${taskId}`;
+
+  await client.workflow.start('orchestratorWorkflow', {
+    args: [{ taskId, goal, repoUrl }],
+    taskQueue: 'spoke-task-queue',
+    workflowId,
+  });
+
+  if (ownConnection && connection) {
+    await connection.close();
+  }
+  return workflowId;
+}
+
 async function pollPendingTasks(client: Client) {
   const { prisma } = await import('@spoke/db');
   const poll = async () => {
@@ -70,7 +98,7 @@ async function run() {
 
   const worker = await Worker.create({
     connection,
-    workflowsPath: new URL('./workflows/agent-task.js', import.meta.url).pathname,
+    workflowsPath: new URL('./workflows/index.js', import.meta.url).pathname,
     activities,
     taskQueue: 'spoke-task-queue',
   });

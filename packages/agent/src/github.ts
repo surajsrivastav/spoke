@@ -9,12 +9,37 @@ function slugify(text: string): string {
     .slice(0, 50);
 }
 
+function parseRepoUrl(repoUrl: string): { owner: string; repo: string } {
+  const fullUrl = normalizeRepoUrl(repoUrl);
+  const match = fullUrl.match(/github\.com[\/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
+  if (!match) {
+    throw new Error(`Invalid GitHub repo URL: ${repoUrl}`);
+  }
+  return { owner: match[1], repo: match[2].replace('.git', '') };
+}
+
+async function getDefaultBranch(repoUrl: string): Promise<string> {
+  const { owner, repo } = parseRepoUrl(repoUrl);
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+    headers: {
+      Authorization: `Bearer ${env.GH_TOKEN}`,
+      Accept: 'application/vnd.github.v3+json',
+    },
+  });
+  if (!res.ok) {
+    return 'main';
+  }
+  const data = await res.json() as { default_branch?: string };
+  return data.default_branch ?? 'main';
+}
+
 export async function pushBranch(
   sandboxId: string,
   repoUrl: string,
   goal: string,
   taskId?: string,
 ): Promise<{ branch: string }> {
+  const defaultBranch = await getDefaultBranch(repoUrl);
   const branchSuffix = slugify(goal);
   const branch = taskId ? `spoke/${taskId}-${branchSuffix}` : `spoke/${branchSuffix}`;
 
@@ -27,7 +52,7 @@ export async function pushBranch(
   if (status.stdout.trim()) {
     await executeGit(sandboxId, ['-C', '/repo', 'commit', '-m', `Spoke: ${goal}`]);
   } else {
-    const ahead = await executeGit(sandboxId, ['-C', '/repo', 'rev-list', '--count', 'main..HEAD']);
+    const ahead = await executeGit(sandboxId, ['-C', '/repo', 'rev-list', '--count', `${defaultBranch}..HEAD`]);
     if (ahead.stdout.trim() === '0') {
       throw new Error('No changes detected — agent did not modify any files');
     }
@@ -58,14 +83,8 @@ export async function createPr(
   goal: string,
   description?: string,
 ): Promise<{ prUrl: string; prNumber: number }> {
-  const fullUrl = normalizeRepoUrl(repoUrl);
-  const match = fullUrl.match(/github\.com[\/:]([\w.-]+)\/([\w.-]+)(\.git)?$/);
-  if (!match) {
-    throw new Error(`Invalid GitHub repo URL: ${repoUrl}`);
-  }
-
-  const owner = match[1];
-  const repo = match[2].replace('.git', '');
+  const defaultBranch = await getDefaultBranch(repoUrl);
+  const { owner, repo } = parseRepoUrl(repoUrl);
 
   const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
     method: 'POST',
@@ -78,7 +97,7 @@ export async function createPr(
       title: goal,
       body: description ?? goal,
       head: branch,
-      base: 'main',
+      base: defaultBranch,
     }),
   });
 

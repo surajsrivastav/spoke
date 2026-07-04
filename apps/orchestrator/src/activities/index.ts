@@ -69,6 +69,63 @@ function normalizeRepoUrl(repoUrl: string): string {
   return repoUrl;
 }
 
+function parseRepoUrl(repoUrl: string): { owner: string; repo: string } {
+  const fullUrl = repoUrl.startsWith('http://') || repoUrl.startsWith('https://') || repoUrl.startsWith('git@')
+    ? repoUrl
+    : `https://github.com/${repoUrl}`;
+  const match = fullUrl.match(/github\.com[\/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
+  if (!match) {
+    throw new Error(`Invalid GitHub repo URL: ${repoUrl}`);
+  }
+  return { owner: match[1], repo: match[2].replace('.git', '') };
+}
+
+export async function ensureRepoExists(repoUrl: string): Promise<{ ok: true }> {
+  console.log(`[activity] ensureRepoExists: repoUrl=${repoUrl}`);
+  const { owner, repo } = parseRepoUrl(repoUrl);
+
+  const checkRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+    headers: {
+      Authorization: `Bearer ${env.GH_TOKEN}`,
+      Accept: 'application/vnd.github.v3+json',
+    },
+  });
+
+  if (checkRes.ok) {
+    console.log(`[activity] ensureRepoExists: repo ${owner}/${repo} already exists`);
+    return { ok: true };
+  }
+
+  if (checkRes.status !== 404) {
+    const body = await checkRes.text();
+    throw new Error(`GitHub API error checking repo (${checkRes.status}): ${body}`);
+  }
+
+  console.log(`[activity] ensureRepoExists: repo ${owner}/${repo} not found, creating...`);
+  const createRes = await fetch('https://api.github.com/user/repos', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.GH_TOKEN}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.github.v3+json',
+    },
+    body: JSON.stringify({
+      name: repo,
+      description: `Repository created by Spoke agent`,
+      auto_init: true,
+      private: false,
+    }),
+  });
+
+  if (!createRes.ok) {
+    const body = await createRes.text();
+    throw new Error(`GitHub API error creating repo (${createRes.status}): ${body}`);
+  }
+
+  console.log(`[activity] ensureRepoExists: repo ${owner}/${repo} created`);
+  return { ok: true };
+}
+
 export async function cloneRepo(sandboxId: string, repoUrl: string, taskRunId: string): Promise<{ ok: true }> {
   console.log(`[activity] cloneRepo: sandboxId=${sandboxId}, taskRunId=${taskRunId}`);
   const fullUrl = normalizeRepoUrl(repoUrl);
