@@ -170,7 +170,7 @@ export default function KillModal({ task, onClose, onKill }: KillModalProps) {
               Cost so far
             </div>
             <div style={{ fontSize: "var(--text-sm)", color: "var(--text-primary)", fontFamily: "Geist Mono, monospace" }}>
-              $1.24
+              ${Number(task.total_cost_usd ?? 0).toFixed(2)}
             </div>
           </div>
           <div>
@@ -186,7 +186,7 @@ export default function KillModal({ task, onClose, onKill }: KillModalProps) {
               Operator
             </div>
             <div style={{ fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>
-              alice@ford.com
+              {task.created_by}
             </div>
           </div>
         </div>

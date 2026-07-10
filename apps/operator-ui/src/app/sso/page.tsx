@@ -113,19 +113,21 @@ function ProvidersTab() {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: "var(--text-base)", fontWeight: 500, color: "var(--text-primary)" }}>Google Workspace</div>
-          <div style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)" }}>ford.com · 142 users</div>
+          <div style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)" }}>Example preview — not connected</div>
         </div>
-        <BadgePill label="Active" color="#22c55e" />
+        <BadgePill label="Preview" color="#6b7280" />
         <button
+          disabled
+          title="Available on Spoke Cloud Enterprise"
           style={{
             background: "none",
-            border: "1px solid var(--border-default)",
+            border: "1px solid var(--border-subtle)",
             borderRadius: 6,
             padding: "6px 12px",
             fontSize: "var(--text-ui)",
             fontWeight: 500,
-            color: "var(--text-secondary)",
-            cursor: "pointer",
+            color: "var(--text-tertiary)",
+            cursor: "not-allowed",
           }}
         >
           Configure →
@@ -167,15 +169,17 @@ function ProvidersTab() {
           <div style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)" }}>Not configured</div>
         </div>
         <button
+          disabled
+          title="Available on Spoke Cloud Enterprise"
           style={{
             background: "none",
-            border: "1px solid var(--border-default)",
+            border: "1px solid var(--border-subtle)",
             borderRadius: 6,
             padding: "6px 12px",
             fontSize: "var(--text-ui)",
             fontWeight: 500,
-            color: "var(--text-secondary)",
-            cursor: "pointer",
+            color: "var(--text-tertiary)",
+            cursor: "not-allowed",
           }}
         >
           Set up →

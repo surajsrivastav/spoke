@@ -1,12 +1,36 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS, NAV_ITEM_ICONS } from "../../lib/constants";
 import { useTheme } from "./ThemeContext";
 
+interface SessionUser {
+  email: string;
+  role: string;
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const [monthSpend, setMonthSpend] = useState<number | null>(null);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [authEnabled, setAuthEnabled] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/costs?range=30d")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setMonthSpend(Number(d.month_spend ?? 0)); })
+      .catch(() => {});
+
+    fetch("/api/auth/me")
+      .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        setAuthEnabled(Boolean(d?.auth_enabled));
+        if (ok && d?.user) setSessionUser(d.user);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <aside
@@ -25,7 +49,7 @@ export default function Sidebar() {
     >
       <div style={{ padding: "20px 16px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="10" cy="10" r="8" />
             <path d="M10 6v8" />
             <path d="M6 10h8" />
@@ -34,7 +58,7 @@ export default function Sidebar() {
             style={{
               fontWeight: 800,
               fontSize: 14,
-              color: "#fff",
+              color: "var(--text-primary)",
               fontFamily: "Geist Mono, monospace",
               letterSpacing: "-0.02em",
             }}
@@ -143,8 +167,9 @@ export default function Sidebar() {
             color: "var(--text-tertiary)",
             fontFamily: "Geist Mono, monospace",
           }}
+          title="Total spend this month"
         >
-          $106.20
+          {monthSpend !== null ? `$${monthSpend.toFixed(2)}` : "—"}
         </div>
       </div>
 
@@ -172,11 +197,11 @@ export default function Sidebar() {
             flexShrink: 0,
           }}
         >
-          AS
+          {sessionUser ? sessionUser.email.slice(0, 2).toUpperCase() : "SP"}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", lineHeight: 1.2 }}>
-            alice@ford.com
+            {sessionUser ? sessionUser.email : authEnabled ? "Not signed in" : "Local operator"}
           </div>
           <div
             style={{
@@ -186,7 +211,7 @@ export default function Sidebar() {
               textTransform: "uppercase",
             }}
           >
-            Operator
+            {sessionUser ? sessionUser.role : authEnabled ? "—" : "Self-hosted"}
           </div>
         </div>
       </div>

@@ -51,49 +51,27 @@ export default function CommandPalette() {
   const commands: Command[] = [
     {
       id: "run-task",
-      label: "Run Task",
+      label: "Go to Fleet",
       icon: "⚡",
-      shortcut: "⌘N",
-      action: () => navigate("/"),
-    },
-    {
-      id: "kill-task",
-      label: "Kill Selected Task",
-      icon: "☠",
-      shortcut: "⌘⌥K",
       action: () => navigate("/"),
     },
     {
       id: "search-traces",
-      label: "Search Traces",
+      label: "Open Trace Explorer",
       icon: "🔍",
-      shortcut: "⌘⇧T",
-      action: () => navigate("/"),
-    },
-    {
-      id: "search-users",
-      label: "Search Users",
-      icon: "👥",
-      action: () => navigate("/"),
+      action: () => navigate("/trace"),
     },
     {
       id: "open-costs",
       label: "Open Cost Dashboard",
       icon: "💰",
-      action: () => navigate("/"),
+      action: () => navigate("/cost"),
     },
     {
-      id: "incident-mode",
-      label: "Open Incident Mode",
-      icon: "🚨",
-      shortcut: "⌘I",
-      action: () => navigate("/incident"),
-    },
-    {
-      id: "export-audit",
-      label: "Export Audit Log",
-      icon: "📜",
-      action: () => navigate("/"),
+      id: "open-sso",
+      label: "Open SSO & RBAC Settings",
+      icon: "🔐",
+      action: () => navigate("/sso"),
     },
   ];
 

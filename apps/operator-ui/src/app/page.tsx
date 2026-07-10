@@ -25,7 +25,13 @@ function estimateCost(goal: string): number {
   const words = goal.split(/\s+/).length;
   const tokens = words * 1.3;
   const modelCalls = Math.max(1, Math.ceil(words / 50));
-  return +(tokens * ESTIMATE_PER_TOKEN * modelCalls * 3).toFixed(2);
+  return tokens * ESTIMATE_PER_TOKEN * modelCalls * 3;
+}
+
+function formatCost(cost: number): string {
+  if (cost === 0) return "$0.00";
+  if (cost < 0.01) return "< $0.01";
+  return `$${cost.toFixed(2)}`;
 }
 
 function DeltaArrow({ value }: { value: string }) {
@@ -848,7 +854,7 @@ export default function FleetPage() {
                     <path d="M8 10.5v1" />
                     <path d="M6 8h4" />
                   </svg>
-                  Estimated cost: <strong>${estimatedCost}</strong>
+                  Estimated cost: <strong>{formatCost(estimatedCost)}</strong>
                 </div>
               )}
             </div>

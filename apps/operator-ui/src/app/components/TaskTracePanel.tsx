@@ -59,10 +59,16 @@ export default function TaskTracePanel({ task, onClose, onKill }: TracePanelProp
   }, []);
 
   const isActive = task.status === "running" || task.status === "pending";
-  const estimatedCost = 0.5 + Math.random() * 4;
-  const modelCost = estimatedCost * 0.87;
-  const sandboxCost = estimatedCost * 0.08;
-  const verifCost = estimatedCost * 0.05;
+  const totalCost = Number(task.total_cost_usd ?? 0);
+  // Today the agent loop is the only billed component; sandbox/verify are
+  // free local Docker operations, so all real cost currently lands on
+  // tool_called/agent_run provenance rows.
+  const modelCost = provenance
+    .filter((p) => p.type === "tool_called" && p.payload?.action === "agent_run")
+    .reduce((sum, p) => sum + Number(p.cost_usd || 0), 0);
+  const sandboxCost = 0;
+  const verifCost = 0;
+  const hasCost = totalCost > 0;
 
   type TraceEv = { type: keyof typeof EVENT_TYPE_CONFIG; detail: string; time: string; id: string };
 
@@ -172,11 +178,11 @@ export default function TaskTracePanel({ task, onClose, onKill }: TracePanelProp
       >
         {[
           { label: "Repo", value: task.repo_url?.replace("https://github.com/", "") || "org/api" },
-          { label: "Cost", value: `$${estimatedCost.toFixed(2)}`, mono: true },
+          { label: "Cost", value: `$${totalCost.toFixed(totalCost > 0 && totalCost < 0.01 ? 4 : 2)}`, mono: true },
           { label: "Status", value: task.status, color: "var(--status-running)" },
           { label: "Operator", value: task.created_by },
           { label: "Started", value: new Date(task.created_at).toLocaleTimeString() },
-          { label: "Model", value: provenance.find(p => p.type === "tool_called" && p.payload?.action === "agent_run") ? "llama3.2:3b (Ollama)" : "—" },
+          { label: "Cost cap", value: `$${Number(task.cost_cap_usd).toFixed(2)}` },
         ].map((cell, i) => (
           <div
             key={i}
@@ -319,7 +325,6 @@ export default function TaskTracePanel({ task, onClose, onKill }: TracePanelProp
                       }}
                     >
                       Tokens: {p?.tokens || 0} · Cost: ${Number(p?.cost_usd || 0).toFixed(4)}<br />
-                      Model: llama3.2:3b (Ollama)<br />
                       Duration: {p?.duration_ms || 0}ms
                     </div>
                   );
@@ -359,13 +364,11 @@ export default function TaskTracePanel({ task, onClose, onKill }: TracePanelProp
         <div style={{ fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 8 }}>
           Cost Breakdown
         </div>
-        <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
-          <div style={{ width: "87%", background: "#fbbf24" }} />
-          <div style={{ width: "8%", background: "#2dd4bf" }} />
-          <div style={{ width: "5%", background: "#4ade80" }} />
+        <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", marginBottom: 6, background: "var(--bg-elevated)" }}>
+          {hasCost && <div style={{ width: `${(modelCost / totalCost) * 100}%`, background: "#fbbf24" }} />}
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>
-          <span><span style={{ color: "#fbbf24" }}>●</span> Model ${modelCost.toFixed(2)}</span>
+          <span><span style={{ color: "#fbbf24" }}>●</span> Model ${modelCost.toFixed(4)}</span>
           <span><span style={{ color: "#2dd4bf" }}>●</span> Sandbox ${sandboxCost.toFixed(2)}</span>
           <span><span style={{ color: "#4ade80" }}>●</span> Verify ${verifCost.toFixed(2)}</span>
         </div>
