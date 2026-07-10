@@ -1,16 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockTaskUpdate, mockTaskRunCreate, mockPullRequestCreate } = vi.hoisted(() => ({
+const { mockTaskUpdate, mockTaskFindUnique, mockTaskRunCreate, mockTaskRunUpdate, mockPullRequestCreate } = vi.hoisted(() => ({
   mockTaskUpdate: vi.fn(),
+  mockTaskFindUnique: vi.fn(),
   mockTaskRunCreate: vi.fn(),
+  mockTaskRunUpdate: vi.fn(),
   mockPullRequestCreate: vi.fn(),
 }));
 
 vi.mock('@spoke/db', () => ({
   prisma: {
-    task: { update: mockTaskUpdate },
-    taskRun: { create: mockTaskRunCreate },
+    task: { update: mockTaskUpdate, findUnique: mockTaskFindUnique },
+    taskRun: { create: mockTaskRunCreate, update: mockTaskRunUpdate },
     pullRequest: { create: mockPullRequestCreate },
+    trace: { create: vi.fn().mockResolvedValue({}) },
   },
 }));
 
@@ -30,6 +33,18 @@ const {
   mockCreatePr: vi.fn(),
 }));
 
+const { MockCostCapExceededError } = vi.hoisted(() => {
+  class MockCostCapExceededError extends Error {
+    constructor(
+      public readonly currentCost: number,
+      public readonly cap: number,
+    ) {
+      super(`Cost cap reached ($${currentCost.toFixed(2)} of $${cap.toFixed(2)})`);
+    }
+  }
+  return { MockCostCapExceededError };
+});
+
 vi.mock('@spoke/agent', () => ({
   provisionSandbox: mockProvisionSandbox,
   destroySandbox: mockDestroySandbox,
@@ -37,6 +52,7 @@ vi.mock('@spoke/agent', () => ({
   runVerification: mockRunVerification,
   pushBranch: mockPushBranch,
   createPr: mockCreatePr,
+  CostCapExceededError: MockCostCapExceededError,
 }));
 
 const { mockWriteProvenance } = vi.hoisted(() => ({
@@ -70,6 +86,8 @@ describe('activities', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     console.log = vi.fn();
+    mockTaskRunUpdate.mockResolvedValue({});
+    mockTaskFindUnique.mockResolvedValue(null);
   });
 
   describe('updateTaskStatus', () => {
@@ -160,7 +178,7 @@ describe('activities', () => {
 
       expect(console.log).toHaveBeenCalledWith('[activity] runAgent: sandboxId=sandbox-abc, taskRunId=run-1');
       expect(mockRunAgentLoop).toHaveBeenCalledTimes(1);
-      expect(mockRunAgentLoop).toHaveBeenCalledWith('sandbox-abc', 'fix the bug', 'run-1', undefined);
+      expect(mockRunAgentLoop).toHaveBeenCalledWith('sandbox-abc', 'fix the bug', 'run-1', undefined, undefined);
       expect(mockWriteProvenance).toHaveBeenCalledTimes(1);
       expect(mockWriteProvenance).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -189,7 +207,7 @@ describe('activities', () => {
       await runAgent('sandbox-abc', 'fix lint', 'run-2', prevErrors);
 
       expect(console.log).toHaveBeenCalledWith('[activity] runAgent: sandboxId=sandbox-abc, taskRunId=run-2');
-      expect(mockRunAgentLoop).toHaveBeenCalledWith('sandbox-abc', 'fix lint', 'run-2', prevErrors);
+      expect(mockRunAgentLoop).toHaveBeenCalledWith('sandbox-abc', 'fix lint', 'run-2', prevErrors, undefined);
       const provenance = mockWriteProvenance.mock.calls[0][0];
       expect(provenance.durationMs).toBeGreaterThanOrEqual(0);
       expect(provenance.durationMs).toBeLessThan(60000);
@@ -200,6 +218,49 @@ describe('activities', () => {
 
       await expect(runAgent('sandbox-abc', 'fix', 'run-1')).rejects.toThrow('Agent crashed');
       expect(console.log).toHaveBeenCalledWith('[activity] runAgent: sandboxId=sandbox-abc, taskRunId=run-1');
+    });
+
+    it('uses the task cost cap and marks the task failed when the cap is exceeded (F-07)', async () => {
+      mockTaskFindUnique.mockResolvedValue({ id: 'task-1', cost_cap_usd: 5 });
+      mockTaskUpdate.mockResolvedValue({});
+      mockTaskRunUpdate.mockResolvedValue({});
+      mockWriteProvenance.mockResolvedValue(undefined);
+      mockRunAgentLoop.mockRejectedValue(new MockCostCapExceededError(4.95, 5));
+
+      await expect(runAgent('sandbox-abc', 'expensive goal', 'run-1', undefined, 'task-1')).rejects.toThrow(
+        /Cost cap reached \(\$4\.95 of \$5\.00\)/,
+      );
+
+      expect(mockRunAgentLoop).toHaveBeenCalledWith('sandbox-abc', 'expensive goal', 'run-1', undefined, 5);
+      expect(mockTaskUpdate).toHaveBeenCalledWith({
+        where: { id: 'task-1' },
+        data: { status: 'failed', failure_reason: 'cost_cap_exceeded' },
+      });
+      expect(mockWriteProvenance).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'cost_cap_exceeded',
+          payload: { current_cost: 4.95, cap: 5 },
+        }),
+      );
+    });
+
+    it('records agent cost on the task run and task (F-07)', async () => {
+      mockTaskFindUnique.mockResolvedValue({ id: 'task-1', cost_cap_usd: 5 });
+      mockTaskUpdate.mockResolvedValue({});
+      mockTaskRunUpdate.mockResolvedValue({});
+      mockWriteProvenance.mockResolvedValue(undefined);
+      mockRunAgentLoop.mockResolvedValue({ result: 'done', totalTokens: 500, totalCost: 1.44 });
+
+      await runAgent('sandbox-abc', 'goal', 'run-1', undefined, 'task-1');
+
+      expect(mockTaskRunUpdate).toHaveBeenCalledWith({
+        where: { id: 'run-1' },
+        data: { total_cost_usd: { increment: 1.44 }, total_tokens: { increment: 500 } },
+      });
+      expect(mockTaskUpdate).toHaveBeenCalledWith({
+        where: { id: 'task-1' },
+        data: { total_cost_usd: { increment: 1.44 } },
+      });
     });
 
     it('truncates long result in provenance write', async () => {

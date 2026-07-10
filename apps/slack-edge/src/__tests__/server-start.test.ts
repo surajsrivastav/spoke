@@ -10,7 +10,7 @@ vi.mock('@hono/node-server', () => ({
 }))
 
 vi.mock('../verify-slack-request.js', () => ({
-  verifySlackRequest: async (_c: any, next: any) => { await next() },
+  verifySlackRequest: async (_c: unknown, next: () => Promise<void>) => { await next() },
 }))
 
 vi.mock('@spoke/shared', () => ({
@@ -22,6 +22,7 @@ vi.mock('@spoke/shared', () => ({
 
 vi.mock('@spoke/db', () => ({
   prisma: { task: { create: vi.fn() } },
+  checkBudgetForNewTask: vi.fn().mockResolvedValue({ allowed: true, remaining: Infinity, budget: Infinity, spent: 0 }),
 }))
 
 vi.mock('@slack/web-api', () => ({
@@ -36,8 +37,8 @@ vi.mock('node:crypto', () => ({
 }))
 
 describe('server start without VITEST', () => {
-  let serveFn: any
-  let app: any
+  let serveFn: ReturnType<typeof vi.fn>
+  let app: unknown
 
   beforeAll(async () => {
     serveFn = (await import('@hono/node-server')).serve

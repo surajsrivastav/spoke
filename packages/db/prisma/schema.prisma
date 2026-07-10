@@ -14,6 +14,10 @@ model Task {
   branch_target   String    @default("main")
   status          String
   cost_cap_usd    Decimal   @default(5.00)
+  total_cost_usd  Decimal   @default(0)
+  failure_reason  String?
+  team_id         String?
+  team            Team?     @relation(fields: [team_id], references: [id])
   created_by      String
   created_at      DateTime  @default(now())
   updated_at      DateTime  @updatedAt
@@ -23,6 +27,58 @@ model Task {
 
   @@map("tasks")
   @@index([status])
+  @@index([created_at(sort: Desc)])
+  @@index([team_id])
+}
+
+model Team {
+  id                 String   @id
+  name               String   @unique
+  monthly_budget_usd Decimal  @default(500)
+  created_at         DateTime @default(now())
+  users              User[]
+  tasks              Task[]
+
+  @@map("teams")
+}
+
+model User {
+  id            String    @id
+  email         String    @unique
+  name          String?
+  role          String    @default("operator")
+  provider      String?
+  team_id       String?
+  team          Team?     @relation(fields: [team_id], references: [id])
+  created_at    DateTime  @default(now())
+  last_login_at DateTime?
+  sessions      Session[]
+
+  @@map("users")
+}
+
+model Session {
+  token      String   @id
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id])
+  role       String
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@map("sessions")
+  @@index([user_id])
+}
+
+model AuditLog {
+  id         String   @id
+  actor      String
+  action     String
+  resource   String?
+  allowed    Boolean  @default(true)
+  detail     Json?
+  created_at DateTime @default(now())
+
+  @@map("audit_logs")
   @@index([created_at(sort: Desc)])
 }
 

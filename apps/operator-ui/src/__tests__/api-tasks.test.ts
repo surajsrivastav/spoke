@@ -9,6 +9,7 @@ vi.mock('@spoke/db', () => ({
       update: vi.fn(),
     },
   },
+  checkBudgetForNewTask: vi.fn().mockResolvedValue({ allowed: true, remaining: Infinity, budget: Infinity, spent: 0 }),
 }));
 
 describe('GET /api/tasks', () => {

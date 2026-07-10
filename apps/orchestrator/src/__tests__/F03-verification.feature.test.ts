@@ -16,6 +16,18 @@ const {
   mockCreatePr: vi.fn(),
 }));
 
+const { MockCostCapExceededError } = vi.hoisted(() => {
+  class MockCostCapExceededError extends Error {
+    constructor(
+      public readonly currentCost: number,
+      public readonly cap: number,
+    ) {
+      super(`Cost cap reached ($${currentCost.toFixed(2)} of $${cap.toFixed(2)})`);
+    }
+  }
+  return { MockCostCapExceededError };
+});
+
 vi.mock('@spoke/agent', () => ({
   provisionSandbox: mockProvisionSandbox,
   destroySandbox: mockDestroySandbox,
@@ -23,6 +35,7 @@ vi.mock('@spoke/agent', () => ({
   runVerification: mockRunVerification,
   pushBranch: mockPushBranch,
   createPr: mockCreatePr,
+  CostCapExceededError: MockCostCapExceededError,
 }));
 
 const { mockWriteProvenance } = vi.hoisted(() => ({ mockWriteProvenance: vi.fn() }));
@@ -37,8 +50,9 @@ const { mockTaskUpdate, mockTaskRunCreate, mockPullRequestCreate } = vi.hoisted(
 vi.mock('@spoke/db', () => ({
   prisma: {
     task: { update: mockTaskUpdate, findUnique: vi.fn() },
-    taskRun: { create: mockTaskRunCreate, groupBy: vi.fn() },
+    taskRun: { create: mockTaskRunCreate, update: vi.fn().mockResolvedValue({}), groupBy: vi.fn() },
     pullRequest: { create: mockPullRequestCreate },
+    trace: { create: vi.fn().mockResolvedValue({}) },
   },
 }));
 
@@ -138,7 +152,7 @@ describe('F-03: Verification — Agent retry integration', () => {
 
     await runAgent('sandbox-abc', 'fix types', 'run-2', prevErrors);
 
-    expect(mockRunAgentLoop).toHaveBeenCalledWith('sandbox-abc', 'fix types', 'run-2', prevErrors);
+    expect(mockRunAgentLoop).toHaveBeenCalledWith('sandbox-abc', 'fix types', 'run-2', prevErrors, undefined);
   });
 
   it('truncates long results in provenance logging', async () => {

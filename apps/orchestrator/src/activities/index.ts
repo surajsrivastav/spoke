@@ -2,6 +2,7 @@ import { prisma } from '@spoke/db';
 import type { TaskStatus } from '@spoke/shared';
 import { env } from '@spoke/shared';
 import { randomUUID } from 'node:crypto';
+import { ApplicationFailure } from '@temporalio/activity';
 import {
   provisionSandbox as realProvisionSandbox,
   destroySandbox as realDestroySandbox,
@@ -10,21 +11,30 @@ import {
   pushBranch as realPushBranch,
   createPr as realCreatePr,
   executeShell,
+  CostCapExceededError,
 } from '@spoke/agent';
 import { writeProvenance } from '@spoke/provenance';
+
+const TERMINAL_STATUSES: TaskStatus[] = ['succeeded', 'failed', 'killed'];
 
 export async function updateTaskStatus(taskId: string, status: TaskStatus): Promise<{ ok: true }> {
   console.log(`[activity] updateTaskStatus: taskId=${taskId}, status=${status}`);
   if (status === 'succeeded') {
     await prisma.task.updateMany({
       where: { id: taskId, status: { not: 'killed' } },
-      data: { status },
+      data: { status, completed_at: new Date() },
     });
   } else {
     await prisma.task.update({
       where: { id: taskId },
-      data: { status },
+      data: { status, ...(TERMINAL_STATUSES.includes(status) ? { completed_at: new Date() } : {}) },
     });
+  }
+  if (TERMINAL_STATUSES.includes(status)) {
+    await prisma.taskRun.updateMany({
+      where: { task_id: taskId, ended_at: null },
+      data: { status, ended_at: new Date() },
+    }).catch(() => {});
   }
   return { ok: true };
 }
@@ -84,22 +94,86 @@ export async function runAgent(
   goal: string,
   taskRunId: string,
   prevErrors?: Record<string, unknown>,
+  taskId?: string,
 ): Promise<{ result: string }> {
   console.log(`[activity] runAgent: sandboxId=${sandboxId}, taskRunId=${taskRunId}`);
 
+  let costCap: number | undefined;
+  if (taskId) {
+    const task = await prisma.task.findUnique({ where: { id: taskId } });
+    if (task) costCap = Number(task.cost_cap_usd);
+  }
+
   const t0 = Date.now();
-  const { result, totalTokens, totalCost } = await runAgentLoop(sandboxId, goal, taskRunId, prevErrors);
+  try {
+    const { result, totalTokens, totalCost } = await runAgentLoop(sandboxId, goal, taskRunId, prevErrors, costCap);
 
-  await writeProvenance({
-    taskRunId,
-    type: 'tool_called',
-    payload: { action: 'agent_run', result: result.slice(0, 500) },
-    costUsd: totalCost,
-    tokens: totalTokens,
-    durationMs: Date.now() - t0,
-  });
+    await recordAgentCost(taskRunId, taskId, totalCost, totalTokens);
+    await writeProvenance({
+      taskRunId,
+      type: 'tool_called',
+      payload: { action: 'agent_run', result: result.slice(0, 500) },
+      costUsd: totalCost,
+      tokens: totalTokens,
+      durationMs: Date.now() - t0,
+    });
 
-  return { result };
+    return { result };
+  } catch (err) {
+    if (err instanceof CostCapExceededError) {
+      await recordAgentCost(taskRunId, taskId, err.currentCost, 0);
+      if (taskId) {
+        await prisma.task.update({
+          where: { id: taskId },
+          data: { status: 'failed', failure_reason: 'cost_cap_exceeded' },
+        }).catch(() => {});
+      }
+      await writeProvenance({
+        taskRunId,
+        type: 'cost_cap_exceeded',
+        payload: { current_cost: err.currentCost, cap: err.cap },
+        costUsd: err.currentCost,
+        tokens: 0,
+        durationMs: Date.now() - t0,
+      }).catch(() => {});
+      throw ApplicationFailure.nonRetryable(err.message, 'CostCapExceededError');
+    }
+    throw err;
+  }
+}
+
+async function recordAgentCost(
+  taskRunId: string,
+  taskId: string | undefined,
+  costUsd: number,
+  tokens: number,
+): Promise<void> {
+  await prisma.taskRun.update({
+    where: { id: taskRunId },
+    data: {
+      total_cost_usd: { increment: costUsd },
+      total_tokens: { increment: tokens },
+    },
+  }).catch(() => {});
+  if (taskId) {
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { total_cost_usd: { increment: costUsd } },
+    }).catch(() => {});
+  }
+  await prisma.trace.create({
+    data: {
+      id: randomUUID(),
+      task_run_id: taskRunId,
+      type: 'model_call',
+      model: env.DEFAULT_MODEL,
+      input: { taskId },
+      output: {},
+      tokens_in: tokens,
+      tokens_out: 0,
+      cost_usd: costUsd,
+    },
+  }).catch(() => {});
 }
 
 export async function verify(

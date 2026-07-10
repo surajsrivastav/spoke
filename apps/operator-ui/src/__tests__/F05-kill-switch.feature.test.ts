@@ -11,6 +11,13 @@ vi.mock('@spoke/db', () => ({
   },
 }));
 
+vi.mock('@temporalio/client', () => ({
+  Connection: {
+    connect: vi.fn().mockRejectedValue(new Error('temporal unavailable in tests')),
+  },
+  Client: vi.fn(),
+}));
+
 describe('F-05: Operator UI & Kill Switch — Acceptance Criteria', () => {
   describe('✅ Happy path — kill a running task', () => {
     it('sets status to killed and returns ok', async () => {

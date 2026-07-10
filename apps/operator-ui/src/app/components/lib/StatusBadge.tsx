@@ -3,8 +3,21 @@
 import type { TaskStatus } from "@spoke/shared";
 import { STATUS_CONFIG } from "../../lib/constants";
 
-export function StatusBadge({ status }: { status: TaskStatus }) {
-  const cfg = STATUS_CONFIG[status];
+// Run-level statuses (e.g. "provisioning") are not in STATUS_CONFIG;
+// render them with a neutral badge instead of crashing.
+function statusConfig(status: string) {
+  return (
+    STATUS_CONFIG[status as TaskStatus] ?? {
+      color: "#6b7280",
+      label: status.charAt(0).toUpperCase() + status.slice(1),
+      bg: "rgba(107,114,128,0.12)",
+      border: "rgba(107,114,128,0.2)",
+    }
+  );
+}
+
+export function StatusBadge({ status }: { status: TaskStatus | string }) {
+  const cfg = statusConfig(status);
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs-c-w6"
@@ -29,10 +42,10 @@ export function StatusDot({
   status,
   pulsing,
 }: {
-  status: TaskStatus;
+  status: TaskStatus | string;
   pulsing?: boolean;
 }) {
-  const cfg = STATUS_CONFIG[status];
+  const cfg = statusConfig(status);
   return (
     <span className="relative flex h-2 w-2 items-center justify-center">
       {pulsing && (

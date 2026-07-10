@@ -4,3 +4,4 @@ const DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://spoke:spoke_dev@l
 
 export const prisma = new PrismaClient({ datasourceUrl: DATABASE_URL });
 export * from '@prisma/client';
+export { getMonthlySpend, checkBudgetForNewTask, type BudgetCheck } from './budget';

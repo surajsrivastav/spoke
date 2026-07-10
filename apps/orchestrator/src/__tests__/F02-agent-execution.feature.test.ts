@@ -64,7 +64,7 @@ describe('F-02: Sandboxed Agent Execution — Acceptance Criteria', () => {
 
       expect(mockActivities.provisionSandbox).toHaveBeenCalledWith('task-01');
       expect(mockActivities.cloneRepo).toHaveBeenCalledWith('sandbox-abc', 'https://github.com/org/repo', 'run-1');
-      expect(mockActivities.runAgent).toHaveBeenCalledWith('sandbox-abc', 'add JWT auth to Express API', 'run-1', undefined);
+      expect(mockActivities.runAgent).toHaveBeenCalledWith('sandbox-abc', 'add JWT auth to Express API', 'run-1', undefined, expect.any(String));
       expect(mockActivities.verify).toHaveBeenCalledWith('sandbox-abc', 'run-1');
       expect(mockActivities.pushBranch).toHaveBeenCalledWith('sandbox-abc', 'https://github.com/org/repo', 'add JWT auth to Express API', 'run-1', 'task-01');
       expect(mockActivities.createPr).toHaveBeenCalledWith('https://github.com/org/repo', 'feat/jwt-auth-abc', 'add JWT auth to Express API', 'run-1', 'task-01', 'implemented JWT auth');
@@ -157,8 +157,8 @@ describe('F-02: Sandboxed Agent Execution — Acceptance Criteria', () => {
       await agentTaskWorkflow({ taskId: 'task-1', goal: 'fix types', repoUrl: 'r' });
 
       expect(mockActivities.runAgent).toHaveBeenCalledTimes(2);
-      expect(mockActivities.runAgent).toHaveBeenNthCalledWith(1, 'sandbox-1', 'fix types', 'run-1', undefined);
-      expect(mockActivities.runAgent).toHaveBeenNthCalledWith(2, 'sandbox-1', 'fix types', 'run-1', { typecheck: 'TS2322: Type mismatch' });
+      expect(mockActivities.runAgent).toHaveBeenNthCalledWith(1, 'sandbox-1', 'fix types', 'run-1', undefined, expect.any(String));
+      expect(mockActivities.runAgent).toHaveBeenNthCalledWith(2, 'sandbox-1', 'fix types', 'run-1', { typecheck: 'TS2322: Type mismatch' }, expect.any(String));
     });
 
     it('fails task when cost cap is exceeded mid-execution', async () => {

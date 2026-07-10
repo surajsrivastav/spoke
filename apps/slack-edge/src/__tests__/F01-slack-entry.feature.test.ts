@@ -12,6 +12,7 @@ vi.mock('node:crypto', () => ({
 
 vi.mock('@spoke/db', () => ({
   prisma: { task: { create: mockTaskCreate } },
+  checkBudgetForNewTask: vi.fn().mockResolvedValue({ allowed: true, remaining: Infinity, budget: Infinity, spent: 0 }),
 }));
 
 vi.mock('@slack/web-api', () => ({
@@ -40,7 +41,8 @@ const mentionEvent = (overrides: Record<string, unknown> = {}) => ({
 
 describe('F-01: Slack Entry Point — Acceptance Criteria', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.clearAllMocks()
+    process.env.TARGET_REPO_URL = 'https://github.com/org/repo';
     mockTaskCreate.mockResolvedValue({
       id: 'mock-uuid',
       goal: 'write tests',

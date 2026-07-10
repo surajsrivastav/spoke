@@ -11,6 +11,13 @@ vi.mock('@spoke/db', () => ({
   },
 }));
 
+vi.mock('@temporalio/client', () => ({
+  Connection: {
+    connect: vi.fn().mockRejectedValue(new Error('temporal unavailable in tests')),
+  },
+  Client: vi.fn(),
+}));
+
 describe('POST /api/tasks/[id]/kill', () => {
   it('updates task status to killed and returns ok', async () => {
     vi.mocked(prisma.task.update).mockResolvedValue({} as any);

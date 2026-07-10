@@ -99,6 +99,9 @@ importers:
       '@spoke/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@temporalio/activity':
+        specifier: ^1.17.2
+        version: 1.17.2
       '@temporalio/client':
         specifier: ^1.10.0
         version: 1.17.2

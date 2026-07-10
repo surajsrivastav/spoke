@@ -3,7 +3,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 const { mockTaskCreate, mockPostMessage, mockVerifySlackRequest } = vi.hoisted(() => ({
   mockTaskCreate: vi.fn(),
   mockPostMessage: vi.fn(),
-  mockVerifySlackRequest: vi.fn(async (_c: any, next: any) => { await next() }),
+  mockVerifySlackRequest: vi.fn(async (_c: unknown, next: () => Promise<void>) => { await next() }),
 }))
 
 vi.mock('@spoke/db', () => ({
@@ -12,6 +12,7 @@ vi.mock('@spoke/db', () => ({
       create: mockTaskCreate,
     },
   },
+  checkBudgetForNewTask: vi.fn().mockResolvedValue({ allowed: true, remaining: Infinity, budget: Infinity, spent: 0 }),
 }))
 
 vi.mock('@slack/web-api', () => ({
@@ -40,6 +41,7 @@ import { app } from '../index.js'
 describe('Hono server', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    process.env.TARGET_REPO_URL = 'https://github.com/org/repo'
   })
 
   it('GET /health returns ok', async () => {

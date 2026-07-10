@@ -113,3 +113,38 @@
 
 ## Verification Folder
 - [x] Created: `docs/verification/VERIFICATION.md` — step-by-step verification instructions for all 8 weeks
+
+## Enterprise Features (post-Phase-0)
+**Goal**: F-06 SSO, F-07 Cost Governance, F-08 RBAC per `docs/oss/SPOKE_ACCEPTANCE_CRITERIA.md`.
+
+- [x] **F-06 SSO Login** (gated by `AUTH_ENABLED=true`, OSS default off)
+  - Created: `apps/operator-ui/src/lib/auth.ts` (OIDC config, sessions, audit), routes `api/auth/sso/login`, `api/auth/sso/callback`, `api/auth/me`, `api/auth/logout`
+  - Domain→org matching via `SSO_ALLOWED_DOMAINS`, JIT provisioning with default role, provider-outage handling, 8h session expiry → `401 session_expired`
+- [x] **F-07 Cost Governance**
+  - Created: `packages/agent/src/errors.ts` (`CostCapExceededError` thrown at cap), per-task cap passed from task record through `runAgent`
+  - Created: `packages/db/src/budget.ts` — team monthly budgets checked before task creation (API 402 + Slack rejection reply)
+  - Created: `apps/operator-ui/src/app/api/costs/route.ts` — real aggregates; cost page wired to live data; traces written per agent run
+- [x] **F-08 RBAC**
+  - Created: `apps/operator-ui/src/lib/rbac.ts` — admin/operator/viewer matrix; kill route returns 403 `insufficient_permissions` for viewers, 404 for cross-team access; audit log rows for allowed + denied actions; role change invalidates sessions
+- [x] Migration `20260709000000_enterprise_features` — `teams`, `users`, `sessions`, `audit_logs` tables; `tasks.total_cost_usd`, `failure_reason`, `team_id`
+
+## End-to-End Verification (2026-07-09/10, local stack)
+All services live (Postgres + Temporal via Docker, 4 dev servers). Scenarios verified against the real stack:
+
+- [x] Happy path: API task → Temporal workflow → Docker sandbox → agent (gpt-4o-mini via GitHub Models) → verification → branch push → **real PR opened** (`test-auto-create#2`), status `succeeded`, full provenance chain, cost recorded ($0.03)
+- [x] Kill switch: running task killed via API in <1s (AC ≤10s), workflow signal honored, sandbox destroyed
+- [x] Cost cap: $0-cap task fails with `failure_reason=cost_cap_exceeded` + provenance event
+- [x] Team budget: $3-budget team rejects $5-cap task with HTTP 402; within-budget task accepted
+- [x] Slack entry: HMAC signature verified (401 on invalid), signed mention creates task and starts workflow
+- [x] WhatsApp: webhook handshake 200/403 on good/bad verify token
+- [x] SSE: `/api/events` streams live task + cost updates
+- [x] SSO/RBAC live matrix: no session 401, valid session 200, expired session 401, login 302 to IdP, viewer kill 403, operator own-team kill 200, cross-team kill 404, mid-session demotion 401, audit trail rows for all outcomes
+
+### Bugs found and fixed during E2E
+1. Kill-route tests hung 5s each — Temporal client unmocked; added mocks + 2s `connectTimeout` in the route
+2. `packages/db` `./budget.js` import broke Next.js webpack — switched to extensionless imports
+3. Slack tasks with unset `TARGET_REPO_URL` ran agents then failed at `createPr` — now rejected up front with a config warning reply
+4. Trace page crashed on run status `provisioning` (`StatusBadge` missing config) — added neutral fallback
+5. Fleet page showed `Math.random()` costs/times/sources and faked "Cost today" — now computed from real task data
+6. Task runs never closed — terminal task statuses now set `task_runs.status`/`ended_at` and `tasks.completed_at`
+7. Cost analytics empty — agent runs now write `traces` rows (model, tokens, cost)

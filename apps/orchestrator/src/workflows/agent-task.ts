@@ -49,7 +49,7 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<{ ok: tr
     let agentResult: { result: string } = { result: '' };
 
     for (let attempt = 0; attempt < 3; attempt++) {
-      agentResult = await runAgent(sandboxId, goal, provisionResult.taskRunId, prevErrors);
+      agentResult = await runAgent(sandboxId, goal, provisionResult.taskRunId, prevErrors, taskId);
 
       if (await checkCancelled(taskId)) return { ok: true };
 

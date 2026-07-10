@@ -7,6 +7,9 @@ export type Task = {
   branch_target: string;
   status: TaskStatus;
   cost_cap_usd: number;
+  total_cost_usd?: number | string;
+  failure_reason?: string | null;
+  team_id?: string | null;
   created_by: string;
   created_at: Date;
   updated_at: Date;

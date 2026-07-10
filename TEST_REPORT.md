@@ -1,6 +1,6 @@
 # Spoke — Test Report
 
-**313 tests, 0 failures, 33 test files, 7 packages**
+**358 tests, 0 failures, 37 test files, 7 packages**
 
 ---
 
@@ -13,9 +13,9 @@
 | F-03 Verification Gates | `apps/orchestrator/src/__tests__/F03-verification.feature.test.ts` | 9 | ✅ Happy + Sad + Edge |
 | F-04 Provenance | `packages/provenance/src/__tests__/F04-provenance.feature.test.ts` | 10 | ✅ Happy + Sad + Edge |
 | F-05 Kill Switch | `apps/operator-ui/src/__tests__/F05-kill-switch.feature.test.ts` | 7 | ✅ Happy + Sad + Edge |
-| F-06 SSO | — | — | 🔜 Not yet implemented |
-| F-07 Cost Governance | — | — | 🔜 Not yet implemented |
-| F-08 RBAC | — | — | 🔜 Not yet implemented |
+| F-06 SSO | `apps/operator-ui/src/__tests__/F06-sso.feature.test.ts` | 8 | ✅ Happy + Sad + Edge |
+| F-07 Cost Governance | `apps/operator-ui/src/__tests__/F07-cost-governance.feature.test.ts` + agent/orchestrator cost-cap tests | 5+ | ✅ Happy + Sad + Edge |
+| F-08 RBAC | `apps/operator-ui/src/__tests__/F08-rbac.feature.test.ts` | 8 | ✅ Happy + Sad + Edge |
 
 ---
 
@@ -23,13 +23,13 @@
 
 | Package | Test Files | Tests | Key Areas |
 |---------|-----------|-------|-----------|
-| `@spoke/shared` | 2 | 36 | Types, env validation |
-| `@spoke/agent` | 5 | 65 | Sandbox lifecycle, agent loop, tools, GitHub, verification |
+| `@spoke/shared` | 3 | 55 | Types, env validation, task names |
+| `@spoke/agent` | 5 | 66 | Sandbox lifecycle, agent loop, cost cap (F-07), tools, GitHub, verification |
 | `@spoke/provenance` | 2 | 13 | Provenance writes (happy, sad, edge) |
-| `@spoke/slack-edge` | 6 | 47 | Slack events, F-01 feature, request verification, server start |
+| `@spoke/slack-edge` | 6 | 49 | Slack events, F-01 feature, budget rejection (F-07), request verification, server start |
 | `@spoke/whatsapp-edge` | 6 | 50 | Webhook, message handling, middleware, env defaults |
-| `@spoke/orchestrator` | 5 | 55 | Activities, workflow, F-02 + F-03 features, API handlers |
-| `@spoke/operator-ui` | 7 | 47 | API routes, kill switch (F-05), components, constants |
+| `@spoke/orchestrator` | 5 | 57 | Activities, workflow, cost recording (F-07), F-02 + F-03 features |
+| `@spoke/operator-ui` | 10 | 68 | API routes, kill switch (F-05), SSO (F-06), cost governance (F-07), RBAC (F-08), components |
 
 ---
 

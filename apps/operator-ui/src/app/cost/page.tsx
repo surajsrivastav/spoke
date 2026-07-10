@@ -1,54 +1,103 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const RANGES = ["7d", "30d", "90d"] as const;
 type Range = (typeof RANGES)[number];
 
+const MODEL_COLORS = ["#fbbf24", "#818cf8", "#2dd4bf", "#60a5fa", "#a78bfa", "#fb923c"];
+
+interface CostData {
+  month_spend: number;
+  monthly_budget: number;
+  daily: { day: string; cost: number }[];
+  by_model: { model: string; cost: number }[];
+  top_tasks: { id: string; goal: string; cost: number; cap: number; actor: string; status: string; created_at: string }[];
+}
+
+function timeAgo(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
 export default function CostPage() {
   const [range, setRange] = useState<Range>("30d");
   const [showBudgetAlert, setShowBudgetAlert] = useState(true);
+  const [data, setData] = useState<CostData | null>(null);
 
-  const budgetUsed = 106.2;
-  const budgetTotal = 500;
-  const pct = (budgetUsed / budgetTotal) * 100;
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/costs?range=${range}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (active && d) setData(d); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [range]);
+
+  const budgetUsed = data?.month_spend ?? 0;
+  const budgetTotal = data?.monthly_budget || 500;
+  const pct = Math.min((budgetUsed / budgetTotal) * 100, 100);
   const barColor = pct > 80 ? "var(--status-failed)" : pct > 50 ? "var(--status-warning)" : "var(--accent-primary)";
-  const daysLeft = 9;
-  const projectedEndCost = budgetTotal * 1.15;
+
+  const now = new Date();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const daysLeft = Math.max(endOfMonth.getDate() - now.getDate(), 0);
+  const dayOfMonth = now.getDate();
+  const projectedEndCost = dayOfMonth > 0 ? (budgetUsed / dayOfMonth) * endOfMonth.getDate() : budgetUsed;
   const isOverBudget = projectedEndCost > budgetTotal;
 
-  const dailyCosts = [
-    { day: "Jun 3", cost: 12.4 },
-    { day: "Jun 4", cost: 18.2 },
-    { day: "Jun 5", cost: 15.1 },
-    { day: "Jun 6", cost: 22.8 },
-    { day: "Jun 7", cost: 14.5 },
-    { day: "Jun 8", cost: 9.8 },
-    { day: "Jun 9", cost: 13.4 },
-  ];
+  const dailyCosts = useMemo(() => {
+    const raw = data?.daily ?? [];
+    return raw.slice(-14).map((d) => ({
+      day: new Date(`${d.day}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
+      cost: d.cost,
+    }));
+  }, [data]);
 
-  const maxDaily = Math.max(...dailyCosts.map((d) => d.cost));
+  const maxDaily = Math.max(...dailyCosts.map((d) => d.cost), 0.01);
 
-  const byModel = [
-    { model: "claude-sonnet-4", cost: 71.3, pct: 67, color: "#fbbf24" },
-    { model: "claude-haiku-4", cost: 25.4, pct: 24, color: "#818cf8" },
-    { model: "custom-agent", cost: 9.5, pct: 9, color: "#2dd4bf" },
-  ];
+  const byModel = useMemo(() => {
+    const raw = data?.by_model ?? [];
+    const total = raw.reduce((s, m) => s + m.cost, 0) || 1;
+    return raw.slice(0, 6).map((m, i) => ({
+      model: m.model,
+      cost: m.cost,
+      pct: Math.round((m.cost / total) * 100),
+      color: MODEL_COLORS[i % MODEL_COLORS.length],
+    }));
+  }, [data]);
 
-  const byType = [
-    { type: "Code generation", cost: 48.2, pct: 45, color: "#60a5fa" },
-    { type: "Testing", cost: 31.8, pct: 30, color: "#a78bfa" },
-    { type: "Review", cost: 16.1, pct: 15, color: "#4ade80" },
-    { type: "Debugging", cost: 10.1, pct: 10, color: "#fb923c" },
-  ];
+  const byActor = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const t of data?.top_tasks ?? []) {
+      totals.set(t.actor, (totals.get(t.actor) ?? 0) + t.cost);
+    }
+    const entries = [...totals.entries()].sort(([, a], [, b]) => b - a).slice(0, 6);
+    const total = entries.reduce((s, [, c]) => s + c, 0) || 1;
+    return entries.map(([actor, cost], i) => ({
+      type: actor,
+      cost,
+      pct: Math.round((cost / total) * 100),
+      color: MODEL_COLORS[(i + 3) % MODEL_COLORS.length],
+    }));
+  }, [data]);
 
-  const tasks = [
-    { id: "task_01ABC", goal: "Add JWT auth to Express API", cost: 4.82, actor: "alice", time: "2m ago" },
-    { id: "task_02DEF", goal: "Refactor user service", cost: 3.21, actor: "bob", time: "8m ago" },
-    { id: "task_03GHI", goal: "Fix rate limiting middleware", cost: 1.95, actor: "alice", time: "15m ago" },
-    { id: "task_04JKL", goal: "Add input validation", cost: 2.44, actor: "charlie", time: "32m ago" },
-    { id: "task_05MNO", goal: "Write integration tests for auth", cost: 1.12, actor: "bob", time: "1h ago" },
-  ];
+  const tasks = useMemo(
+    () =>
+      (data?.top_tasks ?? []).map((t) => ({
+        id: t.id.length > 12 ? `${t.id.slice(0, 8)}…` : t.id,
+        goal: t.goal,
+        cost: t.cost,
+        actor: t.actor,
+        time: timeAgo(t.created_at),
+      })),
+    [data],
+  );
 
   return (
     <div>
@@ -131,7 +180,7 @@ export default function CostPage() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: "var(--text-xs)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-tertiary)", marginBottom: 2 }}>
-              Platform Team — June 2026
+              All Teams — {now.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </div>
             <div style={{ fontSize: "var(--text-h3)", fontWeight: 600, color: "var(--text-primary)" }}>
               ${budgetUsed.toFixed(2)} used of ${budgetTotal.toFixed(0)} budget
@@ -251,7 +300,7 @@ export default function CostPage() {
           ))}
         </div>
 
-        {/* By Task Type */}
+        {/* By Actor */}
         <div
           style={{
             flex: 1,
@@ -262,9 +311,9 @@ export default function CostPage() {
           }}
         >
           <div style={{ fontSize: "var(--text-sub)", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text-primary)", marginBottom: 16 }}>
-            By Task Type
+            By Actor
           </div>
-          {byType.map((item) => (
+          {byActor.map((item) => (
             <div key={item.type} style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 140, fontSize: "var(--text-sm)", color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {item.type}

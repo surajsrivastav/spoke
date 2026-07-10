@@ -68,7 +68,7 @@ describe('agentTaskWorkflow', () => {
       expect(mockActivities.updateTaskStatus).toHaveBeenNthCalledWith(1, 'task-1', 'running');
       expect(mockActivities.provisionSandbox).toHaveBeenCalledWith('task-1');
       expect(mockActivities.cloneRepo).toHaveBeenCalledWith('sandbox-1', 'https://github.com/org/repo', 'run-1');
-      expect(mockActivities.runAgent).toHaveBeenCalledWith('sandbox-1', 'fix bug', 'run-1', undefined);
+      expect(mockActivities.runAgent).toHaveBeenCalledWith('sandbox-1', 'fix bug', 'run-1', undefined, 'task-1');
       expect(mockActivities.verify).toHaveBeenCalledWith('sandbox-1', 'run-1');
       expect(mockActivities.pushBranch).toHaveBeenCalledWith('sandbox-1', 'https://github.com/org/repo', 'fix bug', 'run-1', 'task-1');
       expect(mockActivities.createPr).toHaveBeenCalledWith('https://github.com/org/repo', 'fix-bug-123', 'fix bug', 'run-1', 'task-1', 'agent-result');
@@ -144,8 +144,8 @@ describe('agentTaskWorkflow', () => {
       const result = await agentTaskWorkflow({ taskId: 'task-1', goal: 'fix bug', repoUrl: 'https://github.com/org/repo' });
 
       expect(mockActivities.runAgent).toHaveBeenCalledTimes(2);
-      expect(mockActivities.runAgent).toHaveBeenNthCalledWith(1, 'sandbox-1', 'fix bug', 'run-1', undefined);
-      expect(mockActivities.runAgent).toHaveBeenNthCalledWith(2, 'sandbox-1', 'fix bug', 'run-1', { error1: 'lint failed' });
+      expect(mockActivities.runAgent).toHaveBeenNthCalledWith(1, 'sandbox-1', 'fix bug', 'run-1', undefined, 'task-1');
+      expect(mockActivities.runAgent).toHaveBeenNthCalledWith(2, 'sandbox-1', 'fix bug', 'run-1', { error1: 'lint failed' }, 'task-1');
       expect(mockActivities.verify).toHaveBeenCalledTimes(2);
       expect(mockActivities.pushBranch).toHaveBeenCalled();
       expect(mockActivities.createPr).toHaveBeenCalled();

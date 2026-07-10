@@ -2,6 +2,7 @@ import { env } from '@spoke/shared';
 import { createProvider } from './providers/index.js';
 import type { ToolUseBlock, TextBlock } from './providers/types.js';
 import { toolHandlers } from './tools.js';
+import { CostCapExceededError } from './errors.js';
 
 type ToolResultBlockParam = {
   type: 'tool_result';
@@ -136,6 +137,7 @@ export async function runAgentLoop(
   goal: string,
   taskRunId: string,
   prevErrors?: Record<string, unknown>,
+  costCapUsd?: number,
 ): Promise<{ result: string; totalTokens: number; totalCost: number }> {
   const provider = createProvider();
 
@@ -168,17 +170,13 @@ RULE: You MUST use write_file to make changes. Read the file first, then use wri
 ${goal}`,
   });
 
-  const costCap = env.DEFAULT_COST_CAP_USD;
+  const costCap = costCapUsd ?? env.DEFAULT_COST_CAP_USD;
   let totalTokens = 0;
   let totalCost = 0;
 
   for (let iteration = 0; iteration < 50; iteration++) {
     if (totalCost >= costCap) {
-      return {
-        result: `Agent loop terminated: cost cap of $${costCap} reached. Total tokens: ${totalTokens}.`,
-        totalTokens,
-        totalCost,
-      };
+      throw new CostCapExceededError(totalCost, costCap);
     }
 
     const response = await provider.createMessage(

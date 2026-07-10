@@ -226,15 +226,27 @@ describe('runAgentLoop', () => {
     expect(msgs[0].content).toContain('just do it');
   });
 
-  it('enforces the cost cap and returns early', async () => {
+  it('enforces the cost cap by throwing CostCapExceededError', async () => {
     mockEnv.DEFAULT_COST_CAP_USD = 0;
 
-    const result = await runAgentLoop('test-sid', 'expensive task', 'task-run-1');
-
+    await expect(runAgentLoop('test-sid', 'expensive task', 'task-run-1')).rejects.toThrow(
+      /Cost cap reached/,
+    );
     expect(mockCreateMessage).not.toHaveBeenCalled();
-    expect(result.result).toContain('cost cap');
-    expect(result.totalTokens).toBe(0);
-    expect(result.totalCost).toBe(0);
+  });
+
+  it('uses an explicit per-task cost cap over the env default', async () => {
+    mockEnv.DEFAULT_COST_CAP_USD = 0;
+    mockCreateMessage.mockResolvedValue({
+      content: [{ type: 'text', text: 'done' }],
+      inputTokens: 5,
+      outputTokens: 5,
+    });
+
+    const result = await runAgentLoop('test-sid', 'cheap task', 'task-run-1', undefined, 5);
+
+    expect(mockCreateMessage).toHaveBeenCalled();
+    expect(result.result).toBe('done');
   });
 
   it('properly passes tool results back in the next iteration', async () => {
