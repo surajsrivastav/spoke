@@ -9,7 +9,7 @@ Multi-model, self-hosted, bring your own agent. Kill switches and provenance inc
 
 Spoke is an operator-first platform for running autonomous coding agents at scale. Submit tasks via Slack, WhatsApp, or API — Spoke provisions sandboxes, runs agents, verifies output, and creates PRs — all with a kill switch and full provenance chain.
 
-![Architecture](docs/diagrams/architecture.png)
+See the full architecture documentation in [docs/architecture/README.md](docs/architecture/README.md), which includes the contextual diagram, workflow sequence diagram, and tooling breakdown.
 
 ### Key Features
 
