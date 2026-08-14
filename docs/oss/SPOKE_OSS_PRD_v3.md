@@ -2,6 +2,8 @@
 
 **Open Source Product Requirements Document — v3.0**
 
+> Historical product notes only. This repository is MIT-licensed. This document does not alter the project license or add separate commercial terms.
+
 Stable OSS Release — self-hosted, production-grade, operator-first agent control plane.
 
 | Field | Value |
@@ -10,7 +12,7 @@ Stable OSS Release — self-hosted, production-grade, operator-first agent contr
 | Author | Suraj (Distinguished Engineer, Ford Motor Company) |
 | Status | Draft |
 | Date | June 2026 |
-| License | AGPL v3 (OSS core) + Spoke Cloud (paid) |
+| License | MIT |
 | Key change from v2 | Product readiness focus; stable OSS release criteria added |
 
 ---

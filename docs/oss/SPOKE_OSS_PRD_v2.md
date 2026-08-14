@@ -2,6 +2,8 @@
 
 **Open Source Product Requirements Document — v2.0**
 
+> Historical product notes only. This repository is MIT-licensed. This document does not alter the project license or add separate commercial terms.
+
 Cloud-First Monetisation Strategy — OSS is free forever. Enterprise features live in Spoke Cloud only.
 
 | Field | Value |
@@ -10,7 +12,7 @@ Cloud-First Monetisation Strategy — OSS is free forever. Enterprise features l
 | Author | Suraj (Distinguished Engineer, Ford Motor Company) |
 | Status | Draft |
 | Date | May 2026 |
-| License | AGPL v3 (OSS core) + Spoke Cloud (paid) |
+| License | MIT |
 | Key change from v1 | SSO, RBAC, compliance moved exclusively to Spoke Cloud |
 
 ---

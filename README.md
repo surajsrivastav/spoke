@@ -40,7 +40,15 @@ cd spoke
 pnpm install
 ```
 
-### 2. Start infrastructure
+### 2. Configure local environment
+
+```bash
+cp .env.example .env.local
+```
+
+Update `.env.local` to match your local setup, especially the database, model provider, and service tokens.
+
+### 3. Start infrastructure
 
 ```bash
 docker compose -f docker-compose.local.yml up -d
@@ -53,13 +61,13 @@ This starts:
 - **Slack Edge** (port 3001) — Slack webhook receiver
 - **WhatsApp Edge** (port 3002) — WhatsApp webhook receiver
 
-### 3. Run database migrations
+### 4. Run database migrations
 
 ```bash
 pnpm --filter @spoke/db exec prisma migrate deploy
 ```
 
-### 4. Start development servers
+### 5. Start development servers
 
 ```bash
 pnpm dev
@@ -71,9 +79,20 @@ This starts:
 - **Slack Edge** (port 3001) — Slack integration
 - **WhatsApp Edge** (port 3002) — WhatsApp integration
 
-### 5. Open the dashboard
+### 6. Open the dashboard
 
 Visit [http://localhost:3000](http://localhost:3000)
+
+### Resetting a local environment
+
+```bash
+docker compose -f docker-compose.local.yml down -v
+rm -f .env.local
+cp .env.example .env.local
+pnpm install
+pnpm --filter @spoke/db exec prisma migrate deploy
+pnpm dev
+```
 
 ---
 
@@ -191,4 +210,4 @@ infra/
 
 ## License
 
-MIT
+This project is licensed under the [MIT License](LICENSE).
