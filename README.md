@@ -15,9 +15,9 @@ See the full architecture documentation in [docs/architecture/README.md](docs/ar
 
 ### Demo
 
-![Spoke dashboard](.github/assets/demo.png)
+[![Spoke dashboard](.github/assets/demo.png)](.github/assets/demo.mp4)
 
-<video src=".github/assets/demo.mp4" controls muted playsinline width="800"></video>
+*Click the screenshot above to watch the demo video.*
 
 ### Key Features
 
