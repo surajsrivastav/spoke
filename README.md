@@ -15,7 +15,7 @@ See the full architecture documentation in [docs/architecture/README.md](docs/ar
 
 ### Demo
 
-[![Spoke dashboard](.github/assets/demo.png)](.github/assets/demo.mp4)
+[![Spoke dashboard](.github/assets/demo.png)](https://github.com/surajsrivastav/spoke/blob/main/.github/assets/demo.mp4)
 
 *Click the screenshot above to watch the demo video.*
 
