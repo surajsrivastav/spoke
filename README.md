@@ -3,6 +3,8 @@
 **Open source control plane for autonomous coding agent fleets.**  
 Multi-model, self-hosted, bring your own agent. Kill switches and provenance included.
 
+This repository is fully open source under the MIT license. There are no separate paid or proprietary terms for the code in this repo.
+
 ---
 
 ## Overview
@@ -10,6 +12,12 @@ Multi-model, self-hosted, bring your own agent. Kill switches and provenance inc
 Spoke is an operator-first platform for running autonomous coding agents at scale. Submit tasks via Slack, WhatsApp, or API — Spoke provisions sandboxes, runs agents, verifies output, and creates PRs — all with a kill switch and full provenance chain.
 
 See the full architecture documentation in [docs/architecture/README.md](docs/architecture/README.md), which includes the contextual diagram, workflow sequence diagram, and tooling breakdown.
+
+### Demo
+
+![Spoke dashboard](.github/assets/demo.png)
+
+<video src=".github/assets/demo.mp4" controls muted playsinline width="800"></video>
 
 ### Key Features
 
