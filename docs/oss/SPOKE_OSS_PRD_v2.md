@@ -1,10 +1,10 @@
 # SPOKE
 
-**Open Source Product Requirements Document — v2.0**
+**ARCHIVED HISTORICAL DOCUMENT — NOT CURRENT PRODUCT STATUS**
 
-> Historical product notes only. This repository is MIT-licensed. This document does not alter the project license or add separate commercial terms.
+> This file is retained for historical reference only. It does not represent the current project scope, licensing, or feature set. The active repository is MIT-licensed open source software and is not governed by the commercial concepts described here.
 
-Cloud-First Monetisation Strategy — OSS is free forever. Enterprise features live in Spoke Cloud only.
+Cloud-First Monetisation Strategy — archived concept document only.
 
 | Field | Value |
 |-------|-------|

@@ -41,10 +41,7 @@ export default function SSOPage() {
         }}
       >
         <span>✦</span>
-        <span>SSO is a Spoke Cloud Enterprise feature. Self-hosted OSS does not include SSO.</span>
-        <a href="#" style={{ color: "var(--accent-primary)", fontWeight: 600, textDecoration: "none", marginLeft: "auto" }}>
-          Upgrade →
-        </a>
+        <span>SSO is available as an optional configuration for self-hosted deployments and is not required for the core open-source product.</span>
       </div>
 
       {/* Tabs */}
@@ -118,7 +115,7 @@ function ProvidersTab() {
         <BadgePill label="Preview" color="#6b7280" />
         <button
           disabled
-          title="Available on Spoke Cloud Enterprise"
+          title="Optional self-hosted setup"
           style={{
             background: "none",
             border: "1px solid var(--border-subtle)",
@@ -170,7 +167,7 @@ function ProvidersTab() {
         </div>
         <button
           disabled
-          title="Available on Spoke Cloud Enterprise"
+          title="Optional self-hosted setup"
           style={{
             background: "none",
             border: "1px solid var(--border-subtle)",
