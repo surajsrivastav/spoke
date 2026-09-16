@@ -4,15 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "node --env-file=../../.env.local node_modules/next/dist/bin/next dev -H 127.0.0.1 -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
     "test": "vitest run",
     "test:mutation": "stryker run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "next": "^14.2.0",
+    "next": "^15.5.24",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "@spoke/db": "workspace:*",

@@ -36,13 +36,13 @@ function sessionFor(user: Partial<{ id: string; email: string; role: string; tea
   };
 }
 
-function killRequest(id: string): [Request, { params: { id: string } }] {
+function killRequest(id: string): [Request, { params: Promise<{ id: string }> }] {
   return [
     new Request(`http://localhost:3000/api/tasks/${id}/kill`, {
       method: 'POST',
       headers: { cookie: 'spoke_session=tok-1' },
     }),
-    { params: { id } },
+    { params: Promise.resolve({ id }) },
   ];
 }
 
@@ -122,7 +122,7 @@ describe('F-08: RBAC — Acceptance Criteria', () => {
 
       const res = await getTask(
         new Request('http://localhost:3000/api/tasks/task_99', { headers: { cookie: 'spoke_session=tok-1' } }),
-        { params: { id: 'task_99' } },
+        { params: Promise.resolve({ id: 'task_99' }) },
       );
 
       expect(res.status).toBe(404);
@@ -165,7 +165,7 @@ describe('F-08: RBAC — Acceptance Criteria', () => {
 
       const res = await killTask(
         new Request('http://localhost:3000/api/tasks/task_01/kill', { method: 'POST' }),
-        { params: { id: 'task_01' } },
+        { params: Promise.resolve({ id: 'task_01' }) },
       );
 
       expect(res.status).toBe(200);

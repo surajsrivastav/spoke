@@ -17,10 +17,16 @@ describe('runVerification', () => {
 
     expect(result).toEqual({ passed: true, errors: {} });
     expect(executeShell).toHaveBeenCalledTimes(4);
-    expect(executeShell).toHaveBeenNthCalledWith(1, 'test-sid', 'cd /repo && pnpm install 2>&1 || true');
-    expect(executeShell).toHaveBeenNthCalledWith(2, 'test-sid', 'cd /repo && npm run lint 2>&1 || true');
-    expect(executeShell).toHaveBeenNthCalledWith(3, 'test-sid', 'cd /repo && pnpm typecheck 2>&1 || true');
-    expect(executeShell).toHaveBeenNthCalledWith(4, 'test-sid', 'cd /repo && pnpm test 2>&1 || true');
+    expect(executeShell).toHaveBeenNthCalledWith(1, 'test-sid', 'cd /repo && pnpm install 2>&1');
+    expect(executeShell).toHaveBeenNthCalledWith(2, 'test-sid', 'cd /repo && npm run lint 2>&1');
+    expect(executeShell).toHaveBeenNthCalledWith(3, 'test-sid', 'cd /repo && pnpm typecheck 2>&1');
+    expect(executeShell).toHaveBeenNthCalledWith(4, 'test-sid', 'cd /repo && pnpm test 2>&1');
+  });
+
+  it('fails closed and stops checks when dependency installation fails', async () => {
+    vi.mocked(executeShell).mockResolvedValueOnce({ stdout: 'install failed', stderr: '', exitCode: 1 });
+    expect(await runVerification('test-sid')).toEqual({ passed: false, errors: { install: 'install failed' } });
+    expect(executeShell).toHaveBeenCalledTimes(1);
   });
 
   it('collects lint errors when lint fails', async () => {

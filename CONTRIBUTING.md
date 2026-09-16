@@ -15,8 +15,11 @@ cd spoke
 
 ### 2. Install dependencies
 
+Use Node 22.23.2 (`nvm use`) and pnpm 10.33.0, matching CI and Docker.
+
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
+pnpm --filter @spoke/db generate
 ```
 
 ### 3. Configure environment
@@ -32,15 +35,16 @@ Then fill in the required values for your local environment. The sample file inc
 ### 4. Start the local infrastructure
 
 ```bash
-docker compose -f docker-compose.local.yml up -d
+docker compose -f docker-compose.local.yml up -d --wait
 ```
 
-This starts PostgreSQL, Temporal, and the local supporting services.
+This starts infrastructure only. Application containers use the opt-in `apps`
+profile; do not start them alongside `pnpm dev` on the same ports.
 
 ### 5. Run database migrations
 
 ```bash
-pnpm --filter @spoke/db exec prisma migrate deploy
+pnpm migrate
 ```
 
 ### 6. Start the app
@@ -64,6 +68,8 @@ The dashboard is available at http://localhost:3000.
 pnpm test
 pnpm lint
 pnpm typecheck
+pnpm build
+pnpm exec tsx scripts/sandbox-smoke.ts
 ```
 
 ## Code standards
@@ -71,7 +77,12 @@ pnpm typecheck
 - Prefer small, reviewable changes.
 - Do not commit secrets, private tokens, or local environment values.
 - Keep examples and docs actionable for fresh repositories and first-time contributors.
-- Add or update tests for behavioral changes when practical.
+- Add regression tests for behavioral changes. Tests must verify failure paths
+  and real boundaries, not only mock the expected implementation.
+
+The sandbox smoke test needs Docker and network access for its image and tools.
+It uses a disposable container, no model credentials or GitHub writes.
+See [release checks](docs/oss/RELEASE.md) for live provider acceptance testing.
 
 ## Pull requests
 

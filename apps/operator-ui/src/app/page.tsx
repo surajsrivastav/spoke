@@ -453,7 +453,7 @@ export default function FleetPage() {
               {searchQuery ? "No matching tasks" : "No active tasks"}
             </div>
             <div style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)", marginBottom: 20 }}>
-              {searchQuery ? "Try a different search term" : "Send @spoke <goal> in Slack or start a task from the CLI."}
+              {searchQuery ? "Try a different search term" : "Create a task above or submit one through the API."}
             </div>
             {!searchQuery && (
               <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>

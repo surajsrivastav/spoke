@@ -3,8 +3,9 @@ import { authEnabled, getSession, writeAudit } from "@/lib/auth";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
+  const params = await context.params;
   const task = await prisma.task.findUnique({
     where: { id: params.id },
     include: {

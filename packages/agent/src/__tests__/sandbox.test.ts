@@ -2,7 +2,7 @@ const mockExecSync = vi.hoisted(() => vi.fn());
 vi.mock('node:child_process', () => ({ execSync: mockExecSync }));
 vi.mock('node:crypto', () => ({ randomUUID: () => 'mock-uuid' }));
 
-import { provisionSandbox, destroySandbox } from '../sandbox.js';
+import { provisionSandbox, destroySandbox, containerName } from '../sandbox.js';
 
 describe('sandbox', () => {
   beforeEach(() => {
@@ -41,10 +41,16 @@ describe('sandbox', () => {
         .mockImplementationOnce(() => { throw new Error('apk failed'); });
 
       await expect(provisionSandbox()).rejects.toThrow('apk failed');
+      expect(mockExecSync).toHaveBeenLastCalledWith('docker rm -f spoke-sbx-mock-uuid', expect.any(Object));
     });
   });
 
   describe('destroySandbox', () => {
+    it('rejects IDs containing shell syntax before invoking Docker', async () => {
+      await expect(destroySandbox('bad;id')).rejects.toThrow('Invalid sandbox ID');
+      expect(mockExecSync).not.toHaveBeenCalled();
+      expect(() => containerName('$(id)')).toThrow('Invalid sandbox ID');
+    });
     it('removes the Docker container', async () => {
       mockExecSync.mockReturnValueOnce(Buffer.from(''));
 

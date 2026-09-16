@@ -46,7 +46,7 @@ down:
 	docker compose -f docker-compose.local.yml down
 
 migrate:
-	pnpm --filter @spoke/db exec prisma migrate deploy
+	pnpm migrate
 
 # Development
 dev: up migrate

@@ -42,7 +42,7 @@ export default function EmptyPage() {
       >
         Send @spoke &lt;goal&gt; in Slack
         <br />
-        or start a task from the CLI.
+        or submit a task through the API.
       </div>
       <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 48 }}>
         <button

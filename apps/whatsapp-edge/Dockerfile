@@ -1,16 +1,19 @@
-FROM node:20-bullseye-slim AS builder
+FROM node:22.23.2-bookworm-slim AS base
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
+FROM base AS builder
 WORKDIR /app
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.33.0
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc tsconfig.json ./
 COPY apps/whatsapp-edge/package.json apps/whatsapp-edge/
 COPY packages/ packages/
-RUN pnpm install --no-frozen-lockfile --ignore-scripts
+RUN pnpm install --frozen-lockfile --ignore-scripts
 RUN pnpm rebuild
 RUN pnpm --filter @spoke/db generate
 COPY apps/whatsapp-edge/ apps/whatsapp-edge/
 RUN pnpm --filter @spoke/whatsapp-edge build
 
-FROM node:20-bullseye-slim
+FROM base
 WORKDIR /app
 COPY --from=builder /app /app
 EXPOSE 3001
