@@ -25,7 +25,7 @@ describe('F-05: Operator UI & Kill Switch — Acceptance Criteria', () => {
 
       const res = await POST(
         new Request('http://localhost:3000/api/tasks/task-1/kill'),
-        { params: { id: 'task-1' } },
+        { params: Promise.resolve({ id: 'task-1' }) },
       );
 
       expect(res.status).toBe(200);
@@ -42,7 +42,7 @@ describe('F-05: Operator UI & Kill Switch — Acceptance Criteria', () => {
       vi.mocked(prisma.task.update).mockRejectedValue(new Error('Record to update not found'));
 
       await expect(
-        POST(new Request('http://localhost:3000/api/tasks/nonexistent/kill'), { params: { id: 'nonexistent' } }),
+        POST(new Request('http://localhost:3000/api/tasks/nonexistent/kill'), { params: Promise.resolve({ id: 'nonexistent' }) }),
       ).rejects.toThrow('Record to update not found');
     });
 
@@ -50,7 +50,7 @@ describe('F-05: Operator UI & Kill Switch — Acceptance Criteria', () => {
       vi.mocked(prisma.task.update).mockRejectedValue(new Error('db connection failed'));
 
       await expect(
-        POST(new Request('http://localhost:3000/api/tasks/1/kill'), { params: { id: '1' } }),
+        POST(new Request('http://localhost:3000/api/tasks/1/kill'), { params: Promise.resolve({ id: '1' }) }),
       ).rejects.toThrow('db connection failed');
     });
   });
@@ -61,7 +61,7 @@ describe('F-05: Operator UI & Kill Switch — Acceptance Criteria', () => {
 
       const res = await POST(
         new Request('http://localhost:3000/api/tasks/1/kill'),
-        { params: { id: '1' } },
+        { params: Promise.resolve({ id: '1' }) },
       );
 
       expect(res.status).toBe(200);
@@ -73,7 +73,7 @@ describe('F-05: Operator UI & Kill Switch — Acceptance Criteria', () => {
 
       const res = await POST(
         new Request('http://localhost:3000/api/tasks/1/kill'),
-        { params: { id: '1' } },
+        { params: Promise.resolve({ id: '1' }) },
       );
 
       expect(res.status).toBe(200);
@@ -88,7 +88,7 @@ describe('F-05: Operator UI & Kill Switch — Acceptance Criteria', () => {
       vi.mocked(prisma.task.update).mockRejectedValue(new Error('Invalid task ID format'));
 
       await expect(
-        POST(new Request('http://localhost:3000/api/tasks/ /kill'), { params: { id: ' ' } }),
+        POST(new Request('http://localhost:3000/api/tasks/ /kill'), { params: Promise.resolve({ id: ' ' }) }),
       ).rejects.toThrow('Invalid task ID format');
     });
 
@@ -97,7 +97,7 @@ describe('F-05: Operator UI & Kill Switch — Acceptance Criteria', () => {
 
       const res = await POST(
         new Request('http://localhost:3000/api/tasks/pending-task/kill'),
-        { params: { id: 'pending-task' } },
+        { params: Promise.resolve({ id: 'pending-task' }) },
       );
 
       expect(res.status).toBe(200);

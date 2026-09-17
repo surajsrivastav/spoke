@@ -1,0 +1,53 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @spoke/db generate
+      - run: pnpm audit --prod --audit-level high
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm exec tsx scripts/sandbox-smoke.ts
+  containers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env.local
+      - run: docker compose -f docker-compose.local.yml --profile apps config --quiet
+      - run: docker compose -f docker-compose.local.yml --profile apps build
+      - name: Fresh database and application smoke test
+        run: |
+          docker compose -f docker-compose.local.yml --profile apps up -d --wait --wait-timeout 180
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:3000/api/tasks | jq -e 'type == "array" and length == 0'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+      - name: Container diagnostics
+        if: failure()
+        run: docker compose -f docker-compose.local.yml --profile apps logs --tail=100
+      - name: Clean up disposable CI services
+        if: always()
+        run: docker compose -f docker-compose.local.yml --profile apps down -v

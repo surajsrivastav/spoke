@@ -2,6 +2,7 @@ import { Client } from '@temporalio/client';
 import { NativeConnection, Worker } from '@temporalio/worker';
 import * as activities from './activities/index.js';
 import { env } from '@spoke/shared';
+import { existsSync } from 'node:fs';
 
 export async function startAgentTask(
   taskId: string,
@@ -70,7 +71,8 @@ async function run() {
 
   const worker = await Worker.create({
     connection,
-    workflowsPath: new URL('./workflows/agent-task.js', import.meta.url).pathname,
+    workflowsPath: new URL(existsSync(new URL('./workflows/agent-task.js', import.meta.url))
+      ? './workflows/agent-task.js' : './workflows/agent-task.ts', import.meta.url).pathname,
     activities,
     taskQueue: 'spoke-task-queue',
   });

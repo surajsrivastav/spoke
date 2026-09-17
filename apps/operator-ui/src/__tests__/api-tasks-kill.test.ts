@@ -23,7 +23,7 @@ describe('POST /api/tasks/[id]/kill', () => {
     vi.mocked(prisma.task.update).mockResolvedValue({} as any);
 
     const req = new Request('http://localhost:3000/api/tasks/1/kill');
-    const res = await POST(req, { params: { id: '1' } });
+    const res = await POST(req, { params: Promise.resolve({ id: '1' }) });
 
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -38,7 +38,7 @@ describe('POST /api/tasks/[id]/kill', () => {
     vi.mocked(prisma.task.update).mockRejectedValue(new Error('Record to update not found'));
 
     await expect(
-      POST(new Request('http://localhost:3000/api/tasks/999/kill'), { params: { id: '999' } }),
+      POST(new Request('http://localhost:3000/api/tasks/999/kill'), { params: Promise.resolve({ id: '999' }) }),
     ).rejects.toThrow('Record to update not found');
   });
 
@@ -46,7 +46,7 @@ describe('POST /api/tasks/[id]/kill', () => {
     vi.mocked(prisma.task.update).mockRejectedValue(new Error('db connection failed'));
 
     await expect(
-      POST(new Request('http://localhost:3000/api/tasks/1/kill'), { params: { id: '1' } }),
+      POST(new Request('http://localhost:3000/api/tasks/1/kill'), { params: Promise.resolve({ id: '1' }) }),
     ).rejects.toThrow('db connection failed');
   });
 
@@ -55,7 +55,7 @@ describe('POST /api/tasks/[id]/kill', () => {
 
     const res = await POST(
       new Request('http://localhost:3000/api/tasks/1/kill'),
-      { params: { id: '1' } },
+      { params: Promise.resolve({ id: '1' }) },
     );
 
     expect(res.status).toBe(200);

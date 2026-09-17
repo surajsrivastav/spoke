@@ -5,8 +5,9 @@ import { can, REQUIRED_ROLE } from "@/lib/rbac";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
+  const params = await context.params;
   if (authEnabled()) {
     const session = await getSession(request);
     if (!session.ok) {

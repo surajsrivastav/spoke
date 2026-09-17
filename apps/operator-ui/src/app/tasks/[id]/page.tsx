@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import type { Task, TaskRun } from "@spoke/shared";
 import { STATUS_CONFIG } from "../../lib/constants";
 import { StatusBadge, StatusDot } from "../../components/lib/StatusBadge";
@@ -12,11 +13,8 @@ interface TaskDetail extends Task {
   })[];
 }
 
-export default function TaskDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function TaskDetailPage() {
+  const params = useParams<{ id: string }>();
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [killing, setKilling] = useState(false);

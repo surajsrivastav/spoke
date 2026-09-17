@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { containerName } from './sandbox.js';
 
 export interface ToolResult {
@@ -19,8 +19,8 @@ export async function executeShell(sandboxId: string, command: string): Promise<
   console.log(`[sandbox:exec] shell: sandboxId=${sandboxId} cmd=${truncate(command, 100)}`);
 
   try {
-    const output = execSync(
-      `docker exec ${name} sh -c ${JSON.stringify(command)}`,
+    const output = execFileSync(
+      'docker', ['exec', name, 'sh', '-c', command],
       { timeout: 120_000, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 },
     );
     const elapsed = Date.now() - t0;
@@ -43,7 +43,7 @@ export async function executeReadFile(sandboxId: string, path: string): Promise<
   const t0 = Date.now();
   console.log(`[sandbox:exec] read_file: sandboxId=${sandboxId} path=${path}`);
 
-  const result = await executeShell(sandboxId, `cat ${path}`);
+  const result = await executeShell(sandboxId, `cat -- ${shellQuote(path)}`);
 
   if (result.exitCode === 0) {
     const maxLen = 3000;
@@ -67,9 +67,9 @@ export async function executeWriteFile(sandboxId: string, path: string, content:
 
   try {
     const dir = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
-    const mkdirCmd = dir ? `mkdir -p ${JSON.stringify(dir)} && ` : '';
-    execSync(
-      `docker exec -i ${name} sh -c "${mkdirCmd}cat > ${JSON.stringify(path)}"`,
+    const mkdirCmd = dir ? `mkdir -p -- ${shellQuote(dir)} && ` : '';
+    execFileSync(
+      'docker', ['exec', '-i', name, 'sh', '-c', `${mkdirCmd}cat > ${shellQuote(path)}`],
       { input: content, timeout: 30_000, encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 },
     );
     console.log(`[sandbox:exec] write_file ok: sandboxId=${sandboxId} path=${path} size=${content.length} durationMs=${Date.now() - t0}`);
@@ -87,12 +87,18 @@ export async function executeWriteFile(sandboxId: string, path: string, content:
 }
 
 export async function executeGit(sandboxId: string, args: string[]): Promise<ToolResult> {
-  const cmd = `git ${args.map(a => (a.includes(' ') ? JSON.stringify(a) : a)).join(' ')}`;
+  const cmd = `git ${args.map(shellQuote).join(' ')}`;
   console.log(`[sandbox:exec] git: sandboxId=${sandboxId} args=${truncate(cmd, 120)}`);
   return executeShell(sandboxId, cmd);
 }
 
 export type ToolFunction = (sandboxId: string, input: Record<string, unknown>) => Promise<ToolResult>;
+
+// Quote arguments for the container's shell. Docker itself is always invoked
+// with an argv array, never a host shell that could expand agent-supplied text.
+function shellQuote(value: string): string {
+  return "'" + value.replace(/'/g, "'\\''") + "'";
+}
 
 export const toolHandlers: Record<string, ToolFunction> = {
   shell: (sandboxId, input) => executeShell(sandboxId, input.command as string),

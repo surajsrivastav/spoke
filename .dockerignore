@@ -12,3 +12,10 @@ build
 .turbo
 .vscode/
 .idea/
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/*.tsbuildinfo
+**/reports
+.github/assets

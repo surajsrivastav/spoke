@@ -1,221 +1,140 @@
 # Spoke
 
-**Open source control plane for autonomous coding agent fleets.**  
-Multi-model, self-hosted, bring your own agent. Kill switches and provenance included.
+**An open-source control plane for coding agents.**
 
-This repository is fully open source under the MIT license. There are no separate paid or proprietary terms for the code in this repo.
+Submit a task, watch an agent work in a Docker container, inspect its trace,
+and review the resulting pull request. Self-hosted, multi-model, MIT licensed.
 
----
-
-## Overview
-
-Spoke is an operator-first platform for running autonomous coding agents at scale. Submit tasks via Slack, WhatsApp, or API — Spoke provisions sandboxes, runs agents, verifies output, and creates PRs — all with a kill switch and full provenance chain.
-
-See the full architecture documentation in [docs/architecture/README.md](docs/architecture/README.md), which includes the contextual diagram, workflow sequence diagram, and tooling breakdown.
-
-### Demo
+**Status: experimental OSS beta for trusted, local use.** Spoke is not a
+hardened multi-tenant service. Read the [deployment boundaries](SECURITY.md)
+before connecting repositories or exposing any service.
 
 [![Spoke dashboard](.github/assets/demo.png)](https://github.com/surajsrivastav/spoke/blob/main/.github/assets/demo.mp4)
 
-*Click the screenshot above to watch the demo video.*
+## What works today
 
-### Key Features
+- Submit tasks through the dashboard, HTTP API, or optional Slack integration.
+- Run the built-in agent loop with Anthropic or OpenAI-compatible model providers,
+  including OpenRouter and local Ollama.
+- Execute tasks in Docker containers with Temporal workflow orchestration.
+- Run dependency installation, lint, type checks, and tests before pushing a branch.
+- Inspect recorded model/tool activity, costs, verification results, and PR links.
+- Request cancellation from the dashboard or API. Cancellation is cooperative;
+  an in-flight activity may finish before the workflow stops.
 
-- **Multi-entry** — Submit tasks from Slack, WhatsApp, CLI, or API
-- **Bring your own agent** — Works with Claude, GPT, Gemini, local Ollama models, or any OpenAI-compatible provider
-- **Self-hosted** — Runs on your infra via Docker Compose or GCP Cloud Run
-- **Sandboxed execution** — Each task runs in an isolated Docker container
-- **Kill switch** — Kill any running task from the dashboard or API
-- **Provenance** — Full audit trail of every agent action, model call, and tool invocation
-- **Verification gates** — Automated verification before PR creation
-- **PR automation** — Creates PRs with agent-generated changes
+There is no standalone CLI. WhatsApp is an experimental echo/webhook scaffold;
+it does not enqueue tasks and is disabled in the default setup. Model-provider
+support is not an adapter for arbitrary third-party coding-agent runtimes.
 
----
+## Quick start: local development
 
-## Quick Start
+Use Docker with Compose, Node **22.23.2** (`nvm use`), and pnpm **10.33.0**.
+The Docker daemon must be available to the local orchestrator.
 
-### Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/) + [Docker Compose](https://docs.docker.com/compose/install/)
-- [Node.js](https://nodejs.org/) ≥ 20
-- [pnpm](https://pnpm.io/installation) ≥ 9
-
-### 1. Clone and install
-
-```bash
+```sh
 git clone https://github.com/surajsrivastav/spoke.git
 cd spoke
-pnpm install
-```
-
-### 2. Configure local environment
-
-```bash
+nvm use
+npm install -g pnpm@10.33.0
+pnpm install --frozen-lockfile
+pnpm --filter @spoke/db generate
 cp .env.example .env.local
 ```
 
-Update `.env.local` to match your local setup, especially the database, model provider, and service tokens.
+Configure a model provider in `.env.local`. The default uses Ollama at
+`http://localhost:11434/v1`; install/start Ollama and pull your selected model
+(the example uses `llama3.2:3b`), or choose a hosted provider and supply its key.
+Model tool-use quality varies; a small local model is useful for exploration
+but does not guarantee successful coding tasks. Set `GH_TOKEN` to a token scoped
+to a disposable repository you own if you want branch pushes and PR creation.
 
-### 3. Start infrastructure
-
-```bash
-docker compose -f docker-compose.local.yml up -d
-```
-
-This starts:
-- **PostgreSQL** (port 5432) — primary datastore
-- **Temporal** (port 7233) — workflow orchestration engine
-- **Temporal Web UI** (port 8233) — workflow inspector
-- **Slack Edge** (port 3001) — Slack webhook receiver
-- **WhatsApp Edge** (port 3002) — WhatsApp webhook receiver
-
-### 4. Run database migrations
-
-```bash
-pnpm --filter @spoke/db exec prisma migrate deploy
-```
-
-### 5. Start development servers
-
-```bash
+```sh
+# Infrastructure only; application ports remain free for local development.
+docker compose -f docker-compose.local.yml up -d --wait
+pnpm migrate
 pnpm dev
 ```
 
-This starts:
-- **Operator UI** (port 3000) — web dashboard
-- **Orchestrator** (port 8080) — Temporal worker
-- **Slack Edge** (port 3001) — Slack integration
-- **WhatsApp Edge** (port 3002) — WhatsApp integration
+Open [localhost:3000](http://localhost:3000). `pnpm dev` starts the dashboard and
+orchestrator and loads the root `.env.local`. PostgreSQL is on port 5432,
+Temporal on 7233, and its inspector on 8233. The worker has no HTTP port.
 
-### 6. Open the dashboard
+In another terminal, enable Slack only after configuring its token and signing secret:
 
-Visit [http://localhost:3000](http://localhost:3000)
-
-### Resetting a local environment
-
-```bash
-docker compose -f docker-compose.local.yml down -v
-rm -f .env.local
-cp .env.example .env.local
-pnpm install
-pnpm --filter @spoke/db exec prisma migrate deploy
-pnpm dev
+```sh
+pnpm dev:slack
 ```
 
----
+### Run the applications in Docker instead
 
-## Configuration
+Do not run `pnpm dev` alongside the containerized applications on the same ports.
 
-Copy `.env.example` to `.env.local` and configure:
+```sh
+docker compose -f docker-compose.local.yml --profile apps up -d --build
+```
 
-| Variable | Default | Description |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://spoke:spoke_dev@localhost:5432/spoke_dev` | PostgreSQL connection |
-| `DEFAULT_MODEL` | `llama3.2:3b` | Model for agent execution |
-| `MODEL_PROVIDER` | `ollama` | Provider: `ollama`, `openrouter`, `anthropic`, `copilot` |
-| `OLLAMA_BASE_URL` | `http://localhost:11434/v1` | Ollama API endpoint |
-| `TEMPORAL_ADDRESS` | `localhost:7233` | Temporal server address |
-| `GH_TOKEN` | — | GitHub token for PR creation |
+The orchestrator applies database migrations when it starts. Compose overrides
+database and Temporal addresses with service hostnames and reaches host Ollama
+through `host.docker.internal`. Ports are published on loopback only. The
+orchestrator mounts the Docker socket; use a dedicated machine/VM for agent work.
 
----
+### Submit and inspect a task
+
+Use a disposable repository containing a pnpm-compatible `package.json` with
+`lint`, `typecheck`, and `test` scripts. Missing or failing scripts block verification.
+The current PR flow targets a `main` branch.
+
+```sh
+curl -X POST http://localhost:3000/api/tasks \
+  -H 'Content-Type: application/json' \
+  -d '{"goal":"Add a small README example","repo_url":"https://github.com/YOU/test-repo"}'
+
+curl http://localhost:3000/api/tasks
+curl -X POST http://localhost:3000/api/tasks/TASK_ID/kill
+```
+
+The worker polls pending tasks. The dashboard shows their status and traces.
+These examples assume the local beta's default `AUTH_ENABLED=false`; do not
+expose it to a network. Existing SSO/RBAC is incomplete and does not protect all
+API routes (see [security policy](SECURITY.md)).
+
+## Verify your installation
+
+```sh
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+# Real disposable Docker sandbox: success and failure paths, no model/GitHub keys.
+pnpm exec tsx scripts/sandbox-smoke.ts
+```
+
+CI runs the quality checks, sandbox smoke test, and application image builds.
+The smoke test downloads a container image and installs tools, then removes its
+own sandbox. It does not exercise a live model or create a PR. Follow the
+[release checklist](docs/oss/RELEASE.md) for that separate acceptance check.
 
 ## Architecture
 
-```
-┌─────────────┐  ┌──────────────┐  ┌──────────────┐
-│   Slack     │  │   WhatsApp   │  │  Operator UI │
-│   (3001)    │  │   (3002)     │  │   (3000)     │
-└──────┬──────┘  └──────┬───────┘  └──────┬───────┘
-       │                │                 │
-       └────────────────┼─────────────────┘
-                        ▼
-               ┌────────────────┐
-               │  Orchestrator  │
-               │   (Temporal)   │
-               └────┬──────┬────┘
-                    │      │
-            ┌───────▼┐  ┌──▼────────┐
-            │ Sandbox │  │  Model   │
-            │ (Docker)│  │ Provider │
-            └─────────┘  └───────────┘
-```
+Dashboard / HTTP API / Slack → PostgreSQL task queue → Temporal worker →
+Docker sandbox + model provider → verification → GitHub PR.
 
-### Services
+Recorded provenance and traces flow back to PostgreSQL and the dashboard.
+See [architecture details](docs/architecture/README.md); older phase/PRD documents
+describe planned capabilities and are not the current support contract.
 
-| Service | Role | Tech |
-|---|---|---|
-| **Operator UI** | Web dashboard for task management | Next.js 14 |
-| **Orchestrator** | Temporal worker — runs agent workflows | TypeScript, Temporal |
-| **Slack Edge** | Slack event handler | Hono.js |
-| **WhatsApp Edge** | WhatsApp webhook handler | Hono.js |
-| **Agent** | SDK — agent loop, tools, sandbox, verification | TypeScript |
-| **Provenance** | Audit trail writer | TypeScript, Prisma |
-| **Database** | PostgreSQL with Prisma ORM | PostgreSQL |
+| Directory | Purpose |
+|---|---|
+| `apps/operator-ui` | Next.js dashboard and API |
+| `apps/orchestrator` | Temporal worker and activities |
+| `apps/slack-edge` | Signed Slack event receiver |
+| `apps/whatsapp-edge` | Experimental webhook scaffold |
+| `packages/agent` | Built-in model loop, Docker tools, verification, GitHub |
+| `packages/db`, `packages/provenance`, `packages/shared` | Storage, event recording, common types |
+| `infra/terraform` | Historical GCP infrastructure; not validated for this Docker beta |
 
----
+## Contribute
 
-## Usage
-
-### Submit a task via Slack
-
-```
-@spoke Build a todo list app with React
-```
-
-### Submit a task via API
-
-```bash
-curl -X POST http://localhost:3000/api/tasks \
-  -H "Content-Type: application/json" \
-  -d '{"goal": "Add dark mode toggle", "repo_url": "https://github.com/org/repo"}'
-```
-
-### Kill a task
-
-```bash
-curl -X POST http://localhost:3000/api/tasks/<task-id>/kill
-```
-
-Or click the kill button in the dashboard.
-
----
-
-## Testing
-
-```bash
-# Run all tests
-pnpm test
-
-# Run tests for a specific package
-pnpm --filter @spoke/orchestrator test
-pnpm --filter @spoke/operator-ui test
-```
-
-Current coverage: **332 tests, 0 failures** across 7 packages.
-
----
-
-## Project Structure
-
-```
-apps/
-├── slack-edge/         # Slack bot entry point
-├── whatsapp-edge/       # WhatsApp bot entry point
-├── orchestrator/        # Temporal worker — agent orchestration
-└── operator-ui/         # Next.js dashboard
-
-packages/
-├── agent/               # Agent SDK — loop, tools, sandbox, LLM providers
-├── db/                  # Prisma schema + migrations
-├── provenance/          # Typed provenance chain
-└── shared/              # Shared types, env, utilities
-
-infra/
-└── terraform/           # GCP Cloud Run deployment
-```
-
----
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
+See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md),
+and [SECURITY.md](SECURITY.md). Issues and focused pull requests are welcome.
+There are no separate proprietary terms for this repository: [MIT License](LICENSE).

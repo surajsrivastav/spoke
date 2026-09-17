@@ -22,7 +22,7 @@ describe('GET /api/tasks/[id]', () => {
     vi.mocked(prisma.task.findUnique).mockResolvedValue(mockTask);
 
     const req = new Request('http://localhost:3000/api/tasks/1');
-    const res = await GET(req, { params: { id: '1' } });
+    const res = await GET(req, { params: Promise.resolve({ id: '1' }) });
 
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -42,7 +42,7 @@ describe('GET /api/tasks/[id]', () => {
     vi.mocked(prisma.task.findUnique).mockResolvedValue(null);
 
     const req = new Request('http://localhost:3000/api/tasks/999');
-    const res = await GET(req, { params: { id: '999' } });
+    const res = await GET(req, { params: Promise.resolve({ id: '999' }) });
 
     expect(res.status).toBe(404);
     const text = await res.text();
@@ -62,6 +62,6 @@ describe('GET /api/tasks/[id]', () => {
     vi.mocked(prisma.task.findUnique).mockRejectedValue(new Error('db error'));
 
     const req = new Request('http://localhost:3000/api/tasks/1');
-    await expect(GET(req, { params: { id: '1' } })).rejects.toThrow('db error');
+    await expect(GET(req, { params: Promise.resolve({ id: '1' }) })).rejects.toThrow('db error');
   });
 });
