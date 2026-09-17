@@ -116,8 +116,33 @@ own sandbox. It does not exercise a live model or create a PR. Follow the
 
 ## Architecture
 
-Dashboard / HTTP API / Slack → PostgreSQL task queue → Temporal worker →
-Docker sandbox + model provider → verification → GitHub PR.
+```mermaid
+flowchart TD
+    operator["Operator dashboard"] --> api["HTTP API"]
+    slack["Slack mentions"] --> edge["Slack edge · signature validation"]
+
+    subgraph control["Spoke · self-hosted control plane"]
+        api -->|Create task| db[("PostgreSQL · tasks, costs, traces")]
+        edge -->|Create task| db
+        db -->|Poll pending tasks| worker["Orchestrator · Temporal worker"]
+        worker <-->|Durable workflows| temporal["Temporal server"]
+        api -.->|Cooperative cancellation signal| temporal
+        worker --> agent["Built-in agent loop"]
+        agent <-->|Model calls and tool requests| model["Model provider · hosted or local"]
+        agent -->|Execute tools| sandbox["Docker task container · repository checkout"]
+        sandbox --> verify{"Install, lint, types and tests pass?"}
+        verify -->|No · bounded retries| agent
+        verify -->|Yes| publish["Push branch and create PR"]
+        worker -.->|Record activity and results| db
+        db -.->|Status and traces via API| operator
+    end
+
+    publish --> github["GitHub pull request · human review"]
+```
+
+The worker owns the task lifecycle, including container provisioning and cleanup.
+After verification retries are exhausted, the task fails without creating a PR.
+Docker execution uses the host daemon; see [security boundaries](SECURITY.md).
 
 Recorded provenance and traces flow back to PostgreSQL and the dashboard.
 See [architecture details](docs/architecture/README.md); older phase/PRD documents
